@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Imbir film</title>
+<link href="fonts/fonts.css" rel="stylesheet">
+<style>
+:root{--plum-990:#1c0726;--plum-950:#2b0b3d;--plum-800:#4d295d;--gold:#b69244;--gold-hi:#ecc978;--serif:"Cormorant Garamond",serif;--sans:"Montserrat",sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:#000}
+#stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:#000;font-family:var(--sans);color:#fff}
+.scene{position:absolute;inset:0;display:none;overflow:hidden}
+.abs{position:absolute}
+canvas.full{position:absolute;left:0;top:0;width:1920px;height:1080px}
+.serif{font-family:var(--serif)}
+.gold{color:var(--gold-hi)}
+.foil{background:linear-gradient(100deg,#9c7429 0%,#e9c77a 28%,#fff4d2 45%,#e9c77a 60%,#a47d2e 80%,#e9c77a 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent}
+.eyebrow{font-weight:500;font-size:17px;letter-spacing:.42em;text-transform:uppercase;color:var(--gold-hi)}
+.clip{position:absolute;overflow:hidden;background:#0e0412}
+.clip img{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;filter:contrast(1.08) saturate(1.08) brightness(.96)}
+.grade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(60,15,80,.35),rgba(0,0,0,0) 45%,rgba(40,8,55,.45));mix-blend-mode:soft-light}
+.bgblur{position:absolute;inset:-80px;overflow:hidden}
+.bgblur img{width:100%;height:100%;object-fit:cover;filter:blur(38px) brightness(.42) saturate(1.2)}
+.word{position:absolute;font-family:var(--serif);line-height:.95;white-space:nowrap}
+.word span{display:inline-block;will-change:transform,opacity}
+/* overlays */
+#lbT,#lbB{position:absolute;left:0;width:1920px;height:0;background:#000;z-index:40}
+#lbT{top:0} #lbB{bottom:0}
+#leak{position:absolute;inset:0;z-index:41;pointer-events:none;mix-blend-mode:screen;opacity:0}
+#flash{position:absolute;inset:0;z-index:42;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,#fff6dc 0%,#ecc978 35%,rgba(236,201,120,0) 75%);mix-blend-mode:screen;opacity:0}
+#grain{position:absolute;left:0;top:0;width:1920px;height:1080px;z-index:43;pointer-events:none;mix-blend-mode:overlay;opacity:.16}
+#vig{position:absolute;inset:0;z-index:44;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 55%,rgba(0,0,0,.55) 100%)}
+#black{position:absolute;inset:0;z-index:50;background:#000;pointer-events:none}
+
+/* A */
+#A{background:radial-gradient(900px 700px at 50% 46%,#2a0c3a 0%,#12041a 60%,#060108 100%)}
+#a-icon{left:50%;top:0;width:auto;height:440px}
+#a-logo{left:50%;top:50%;width:1000px;margin-left:-500px;margin-top:-165px;-webkit-mask-image:linear-gradient(90deg,#000 0%,#000 40%,transparent 60%,transparent 100%);-webkit-mask-size:300% 100%;mask-image:linear-gradient(90deg,#000 0%,#000 40%,transparent 60%,transparent 100%);mask-size:300% 100%}
+#a-flare{left:0;top:50%;width:1920px;height:6px;margin-top:-3px;background:linear-gradient(90deg,rgba(236,201,120,0),rgba(255,236,190,.95) 50%,rgba(236,201,120,0));filter:blur(2px);opacity:0}
+#a-flare2{left:50%;top:50%;width:700px;height:700px;margin:-350px 0 0 -350px;border-radius:50%;background:radial-gradient(circle,rgba(255,240,200,.55),rgba(236,201,120,.12) 30%,rgba(0,0,0,0) 62%);opacity:0}
+#a-sub{left:0;right:0;top:760px;text-align:center}
+
+/* B */
+#B{background:#000}
+#b-sub{left:0;right:0;top:640px;text-align:center;font-size:190px;font-style:italic;font-weight:400}
+#b-eye{left:0;right:0;top:590px;text-align:center}
+#b-shade{position:absolute;inset:0;background:linear-gradient(0deg,rgba(15,3,20,.85) 0%,rgba(15,3,20,.2) 45%,rgba(15,3,20,0) 70%)}
+
+/* D map */
+#D{background:radial-gradient(1000px 800px at 62% 50%,#2a0c3a 0%,#13041b 60%,#070109 100%)}
+#map{position:absolute;left:0;top:0;width:1920px;height:1080px}
+#d-num{left:130px;top:250px}
+#d-num .n{font-family:var(--serif);font-size:300px;line-height:.8;font-weight:500}
+#d-num .l{font-family:var(--serif);font-size:74px;font-style:italic;color:var(--gold-hi);margin-top:18px}
+#d-num .s{font-size:21px;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-top:34px}
+.city-l{position:absolute;font-family:var(--serif);font-size:34px;font-weight:500;white-space:nowrap;text-shadow:0 2px 12px rgba(0,0,0,.8)}
+.city-l small{display:block;font-family:var(--sans);font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold-hi);font-weight:500;margin-top:2px}
+
+/* E cards */
+#E{background:radial-gradient(1100px 800px at 50% 40%,#3a1250 0%,#1a0624 55%,#08020b 100%)}
+#deck{position:absolute;inset:0;perspective:1700px;perspective-origin:50% 45%}
+.card3{position:absolute;left:50%;top:50%;width:640px;height:417px;margin:-208px 0 0 -320px;transform-style:preserve-3d;border-radius:22px}
+.card3 .face{position:absolute;inset:0;border-radius:22px;overflow:hidden;backface-visibility:hidden;box-shadow:0 40px 90px rgba(0,0,0,.55)}
+.card3 .face img{width:100%;height:100%;object-fit:cover;display:block}
+.card3 .sheen{position:absolute;inset:0;border-radius:22px;background:linear-gradient(115deg,rgba(255,255,255,0) 30%,rgba(255,248,225,.55) 48%,rgba(255,255,255,0) 62%);background-size:300% 100%;mix-blend-mode:overlay;pointer-events:none}
+.card3 .back{transform:rotateY(180deg);background:linear-gradient(135deg,#4d295d,#2b0b3d)}
+#hero .face.front{background:radial-gradient(700px 400px at 20% 0%,#6e2f92 0%,#3b1152 45%,#1f0730 100%)}
+.hf{position:absolute}
+#hero .bd{position:absolute;inset:16px;border:1.5px solid rgba(236,201,120,.7);border-radius:12px}
+#hero .bd2{position:absolute;inset:22px;border:1px solid rgba(236,201,120,.3);border-radius:9px}
+#e-title{left:0;right:0;top:92px;text-align:center}
+#e-left{left:130px;top:230px;width:980px}
+#e-left .h{font-family:var(--serif);font-size:112px;line-height:.98;font-weight:500}
+#e-left .h i{font-weight:400;color:var(--gold-hi)}
+.bul{position:absolute;left:130px;font-size:25px;display:flex;gap:22px;align-items:center;color:rgba(255,255,255,.9)}
+.bul:before{content:"";width:40px;height:1px;background:var(--gold-hi)}
+
+/* F ring */
+#F{background:radial-gradient(900px 700px at 50% 52%,#34104a 0%,#150520 55%,#070109 100%)}
+#f-icon{left:50%;top:50%;height:300px;margin:-170px 0 0 -126px}
+#f-glow{left:50%;top:50%;width:1000px;height:1000px;margin:-500px 0 0 -500px;border-radius:50%;background:radial-gradient(circle,rgba(236,201,120,.25),rgba(236,201,120,.05) 35%,rgba(0,0,0,0) 62%)}
+.rn{position:absolute;left:0;top:0;font-family:var(--serif);font-size:50px;font-weight:500;white-space:nowrap;transform-origin:50% 50%}
+#f-title{left:0;right:0;top:80px;text-align:center}
+#f-title .n{font-family:var(--serif);font-size:120px;line-height:1;font-weight:500}
+#f-title .n i{color:var(--gold-hi);font-weight:400}
+#f-feat{left:0;right:0;top:930px;height:80px;text-align:center}
+.feat{position:absolute;left:0;right:0;font-family:var(--serif);font-size:56px}
+.feat b{font-family:var(--sans);font-weight:500;font-size:26px;letter-spacing:.14em;color:var(--gold-hi);margin-left:26px;vertical-align:middle}
+
+/* G */
+#G{background:#07010a}
+#g-icon{left:50%;top:170px;height:120px;margin-left:-50px}
+#g-btn{left:50%;top:800px;transform:translateX(-50%)}
+.pill{font-weight:600;font-size:19px;letter-spacing:.22em;text-transform:uppercase;padding:22px 44px;border-radius:999px;background:linear-gradient(135deg,#e4c47c,#b69244);color:#2b0b3d;white-space:nowrap}
+#g-ph{left:0;right:0;top:915px;text-align:center;font-size:22px;letter-spacing:.14em;color:rgba(255,255,255,.75)}
+</style>
+</head>
+<body>
+<div id="stage">
+
+<section class="scene" id="A">
+  <canvas class="full" id="a-cv" width="1920" height="1080"></canvas>
+  <div class="abs" id="a-flare2"></div>
+  <img class="abs" id="a-icon" src="a/icon-gold.png">
+  <img class="abs" id="a-logo" src="a/logo-white.png">
+  <div class="abs" id="a-flare"></div>
+  <div class="abs eyebrow" id="a-sub">Сеть тайских спа‑салонов · Казахстан</div>
+</section>
+
+<section class="scene" id="B">
+  <canvas class="full" id="b-cv" width="1920" height="1080"></canvas>
+  <div id="b-shade"></div>
+  <div class="abs eyebrow" id="b-eye">«Имбирь» — тайский спа в Казахстане</div>
+  <div class="abs word foil" id="b-sub" style="left:0;right:0">начинается здесь</div>
+</section>
+
+<section class="scene" id="C"></section>
+
+<section class="scene" id="D">
+  <svg id="map" viewBox="0 0 1920 1080"></svg>
+  <div id="d-labels"></div>
+  <div class="abs" id="d-num"><div class="n foil" id="d-n">9</div><div class="l">салонов</div><div class="s">в 7 городах Казахстана</div></div>
+</section>
+
+<section class="scene" id="E">
+  <div class="abs eyebrow" id="e-title">Подарочные сертификаты</div>
+  <div id="deck"></div>
+  <div class="abs" id="e-left"><div class="eyebrow" style="margin-bottom:34px">Подарок за 2 минуты</div><div class="h">Подарите<br><i>тепло Таиланда</i></div></div>
+  <div class="abs bul" id="e-b1" style="top:640px">На программу или на сумму</div>
+  <div class="abs bul" id="e-b2" style="top:700px">PDF с QR‑кодом — на email</div>
+  <div class="abs bul" id="e-b3" style="top:760px">Сразу или к нужной дате</div>
+  <div class="abs bul" id="e-b4" style="top:820px">3 месяца во всех салонах сети</div>
+</section>
+
+<section class="scene" id="F">
+  <div class="abs" id="f-glow"></div>
+  <div id="ring-back"></div>
+  <img class="abs" id="f-icon" src="a/icon-gold.png">
+  <div id="ring-front"></div>
+  <div class="abs" id="f-title"><div class="eyebrow" style="margin-bottom:22px">Меню ритуалов</div><div class="n">20+ <i>программ</i></div></div>
+  <div class="abs" id="f-feat"></div>
+</section>
+
+<section class="scene" id="G">
+  <div class="clip" id="g-bg" style="inset:-60px"><img></div>
+  <div class="abs" style="inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(20,4,28,.55),rgba(8,1,12,.93) 75%)"></div>
+  <canvas class="full" id="g-dust" width="1920" height="1080"></canvas>
+  <img class="abs" id="g-icon" src="a/icon-gold.png">
+  <canvas class="full" id="g-cv" width="1920" height="1080"></canvas>
+  <div class="abs" id="g-btn"><span class="pill">Подарить сертификат</span></div>
+  <div class="abs" id="g-ph">+7 708 111 8098 &nbsp;·&nbsp; 9 салонов &nbsp;·&nbsp; ежедневно 10:00–22:00</div>
+</section>
+
+<div id="lbT"></div><div id="lbB"></div>
+<div id="leak"></div>
+<div id="flash"></div>
+<canvas id="grain" width="960" height="540"></canvas>
+<div id="vig"></div>
+<div id="black"></div>
+</div>
+
+<script>
+const FPS = 30, DUR = 62.5, BAR = 2.5;
+const FR = {"atmo-candle":89,"atmo-details":62,"atmo-hammam":115,"atmo-locker":73,"atmo-lounge":69,"atmo-massage":113,"atmo-rooms":120,"atmo-sauna":73,"atmo-tea":82,"atmo-towel":142,"garden":66,"hammam":105,"lounge":124,"petals":111,"reception":90,"welcome-ru-v2":300};
+const E = {out: t => 1 - Math.pow(1 - t, 3), out5: t => 1 - Math.pow(1 - t, 5), io: t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2, in3: t => t*t*t, lin: t => t, sine: t => .5 - .5*Math.cos(Math.PI*t)};
+const cl = x => Math.max(0, Math.min(1, x));
+const P = (t, a, b, e = E.out) => e(cl((t - a) / (b - a)));
+const L = (a, b, k) => a + (b - a) * k;
+const $ = id => document.getElementById(id);
+function rnd(i) { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+function st(el, {o = 1, x = 0, y = 0, s = 1, r = 0, b = 0, pre = '', post = ''} = {}) {
+  el.style.opacity = o.toFixed(4);
+  el.style.transform = `${pre} translate(${x.toFixed(2)}px,${y.toFixed(2)}px) scale(${s.toFixed(4)}) rotate(${r.toFixed(3)}deg) ${post}`;
+  el.style.filter = b > 0.05 ? `blur(${b.toFixed(2)}px)` : 'none';
+}
+function rv(el, t, a, z = 999, {d = .9, dy = 38, dx = 0, dz = .5, blur = 12, s0 = 1, pre = ''} = {}) {
+  const i = P(t, a, a + d, E.out5), o = 1 - P(t, z - dz, z, E.io);
+  st(el, {o: i * o, x: (1 - i) * dx, y: (1 - i) * dy - (1 - o) * 14, b: (1 - i) * blur + (1 - o) * 8, s: L(s0, 1, i), pre});
+}
+// split text into spans for per-letter animation
+function splitWord(el) { const txt = el.textContent; el.innerHTML = ''; const fo = el.classList.contains('foil'); if (fo) el.classList.remove('foil'); [...txt].forEach(ch => { const s = document.createElement('span'); if (fo) s.className = 'foil'; s.textContent = ch === ' ' ? ' ' : ch; el.appendChild(s); }); return [...el.children]; }
+function letters(spans, t, a, {stag = .045, d = .8, dy = 60, blur = 14, z = 999} = {}) {
+  spans.forEach((s, k) => { const i = P(t, a + k * stag, a + k * stag + d, E.out5); const o = 1 - P(t, z - .4, z, E.io);
+    s.style.opacity = (i * o).toFixed(3); s.style.transform = `translateY(${((1 - i) * dy).toFixed(1)}px)`; s.style.filter = (1 - i) * blur + (1 - o) * 10 > .1 ? `blur(${((1 - i) * blur + (1 - o) * 10).toFixed(1)}px)` : 'none'; });
+}
+// frames
+const imgCache = new Map();
+function getImg(src) { if (!imgCache.has(src)) { const im = new Image(); im.src = src; imgCache.set(src, im.decode().then(() => im).catch(() => im)); } return imgCache.get(src); }
+function frameIdx(clip, lt, speed = 1) { const n = FR[clip]; let f = Math.floor(Math.max(0, lt) * FPS * speed); const per = 2 * (n - 1); f = f % per; if (f >= n) f = per - f; return f + 1; }
+function frameSrc(clip, lt, speed = 1) { return `frames/${clip}/${String(frameIdx(clip, lt, speed)).padStart(4, '0')}.jpg`; }
+const pending = [];
+function setFrame(img, clip, lt, speed = 1) { const src = frameSrc(clip, lt, speed); if (img.getAttribute('src') !== src) { img.setAttribute('src', src); pending.push(img.decode().catch(() => {})); } }
+function drawCover(ctx, im, W = 1920, H = 1080, sc = 1, ox = .5, oy = .5) {
+  const r = Math.max(W / im.naturalWidth, H / im.naturalHeight) * sc; const w = im.naturalWidth * r, h = im.naturalHeight * r;
+  ctx.drawImage(im, (W - w) * ox, (H - h) * oy, w, h);
+}
+
+// ============ SCENE TIMES ============
+const SC = {A: [0, 7.5], B: [7.5, 12.5], C: [12.5, 27.5], D: [27.5, 35], E: [35, 45], F: [45, 52.5], G: [52.5, 62.5]};
+
+// ============ A: particles into icon ============
+const A = {};
+async function initA() {
+  const icon = await getImg('a/icon-gold.png');
+  const H = 440, W = Math.round(icon.naturalWidth * H / icon.naturalHeight);
+  A.iw = W; A.ih = H;
+  const oc = document.createElement('canvas'); oc.width = W; oc.height = H; const o = oc.getContext('2d');
+  o.drawImage(icon, 0, 0, W, H); const d = o.getImageData(0, 0, W, H).data;
+  const pts = []; for (let y = 0; y < H; y += 2) for (let x = 0; x < W; x += 2) if (d[(y * W + x) * 4 + 3] > 140) pts.push([x, y]);
+  const N = 4200; A.p = [];
+  const ox = 960 - W / 2, oy = 520 - H / 2;
+  for (let i = 0; i < N; i++) {
+    const q = pts[Math.floor(rnd(i * 3.1) * pts.length)];
+    const tx = ox + q[0] + (rnd(i + .7) - .5) * 2, ty = oy + q[1] + (rnd(i + .3) - .5) * 2;
+    const a0 = rnd(i + 11) * 6.2832, r0 = 500 + rnd(i + 13) * 1100;
+    const r1 = Math.hypot(tx - 960, ty - 520), a1 = Math.atan2(ty - 520, tx - 960);
+    A.p.push({tx, ty, a0, r0, a1, r1, d: rnd(i + 17) * 1.1, sz: .9 + rnd(i + 19) * 1.8, br: .45 + rnd(i + 23) * .55, sw: 1.6 + rnd(i + 29) * 1.8});
+  }
+  A.ctx = $('a-cv').getContext('2d');
+  A.glow = document.createElement('canvas'); A.glow.width = 960; A.glow.height = 540;
+  $('a-icon').style.marginLeft = (-W / 2) + 'px'; $('a-icon').style.top = oy + 'px';
+}
+function drawA(t) {
+  const ctx = A.ctx; ctx.globalCompositeOperation = 'source-over'; ctx.clearRect(0, 0, 1920, 1080);
+  const fadeP = 1 - P(t, 4.9, 5.6, E.io);
+  if (fadeP <= 0) return;
+  ctx.globalCompositeOperation = 'lighter';
+  for (const p of A.p) {
+    const k = E.io(cl((t - .4 - p.d) / 3.4));
+    const ang = L(p.a0 + p.sw * 3.1416, p.a1, k) + (1 - k) * t * .15;
+    const r = L(p.r0, p.r1, k);
+    let x = 960 + Math.cos(ang) * r * (1 + (1 - k) * .25), y = 520 + Math.sin(ang) * r * (1 - (1 - k) * .35);
+    if (k >= 1) { x = p.tx + Math.sin(t * 3 + p.a0 * 5) * .6; y = p.ty + Math.cos(t * 2.6 + p.r0) * .6; }
+    const tw = .6 + .4 * Math.sin(t * 5 + p.a0 * 9);
+    const a = Math.min(1, p.br * tw * fadeP * cl(t / .8) * (.6 + .4 * k) * 1.3);
+    const s = p.sz * (1.2 + (1 - k) * 1.6);
+    ctx.fillStyle = `rgba(236,196,110,${a.toFixed(3)})`;
+    ctx.fillRect(x - s / 2, y - s / 2, s, s);
+  }
+  // glow pass
+  const g = A.glow.getContext('2d'); g.clearRect(0, 0, 960, 540); g.filter = 'blur(10px)'; g.drawImage($('a-cv'), 0, 0, 960, 540); g.filter = 'none';
+  ctx.globalAlpha = .9; ctx.drawImage(A.glow, 0, 0, 1920, 1080); ctx.globalAlpha = 1;
+}
+function renderA(t) {
+  drawA(t);
+  // real icon crossfade after particles converge
+  const ii = P(t, 4.5, 5.3, E.io), io = P(t, 5.5, 6.2, E.io);
+  st($('a-icon'), {o: ii * (1 - io), s: L(1, 1.04, P(t, 4.5, 6.2, E.lin)) * L(1, .55, io), y: io * -40});
+  $('a-icon').style.filter = `drop-shadow(0 0 ${L(40, 14, ii).toFixed(0)}px rgba(236,201,120,.55))`;
+  const fl = P(t, 4.85, 5.05, E.out) * (1 - P(t, 5.05, 6.0, E.out));
+  $('a-flare').style.opacity = fl; $('a-flare').style.transform = `scaleX(${L(.2, 1.4, P(t, 4.85, 5.8, E.out))})`;
+  $('a-flare2').style.opacity = fl * .9; $('a-flare2').style.transform = `scale(${L(.5, 1.6, P(t, 4.85, 5.8))})`;
+  // logo reveal via mask sweep
+  const lo = P(t, 5.6, 6.9, E.io);
+  const logo = $('a-logo'); logo.style.opacity = P(t, 5.55, 5.8); logo.style.webkitMaskPosition = `${L(100, 0, lo)}% 0`; logo.style.maskPosition = `${L(100, 0, lo)}% 0`;
+  logo.style.transform = `scale(${L(1.05, 1, lo)})`;
+  rv($('a-sub'), t, 6.4, 999, {dy: 16, d: .9});
+  // push-in before cut
+  const push = P(t, 6.9, 7.5, E.in3);
+  $('A').style.transform = `scale(${L(1, 1.25, push)})`; $('A').style.filter = push > .02 ? `blur(${(push * 10).toFixed(1)}px)` : 'none';
+}
+
+// ============ B: TAILAND with footage inside ============
+const B = {word: 'ТАИЛАНД', size: 400};
+function bFont() { return `600 ${B.size}px "Cormorant Garamond"`; }
+function initB() {
+  B.ctx = $('b-cv').getContext('2d');
+  B.tc = document.createElement('canvas'); B.tc.width = 1920; B.tc.height = 1080;
+  // find the thickest interior point near center for the fly-through
+  const c = document.createElement('canvas'); c.width = 1920; c.height = 1080; const x = c.getContext('2d');
+  x.font = bFont(); x.textAlign = 'center'; x.textBaseline = 'middle'; x.letterSpacing = '6px'; x.fillStyle = '#fff'; x.fillText(B.word, 960, 520);
+  const d = x.getImageData(0, 0, 1920, 1080).data; const on = (px, py) => d[(py * 1920 + px) * 4 + 3] > 200;
+  let best = [960, 520], br = 0;
+  for (let py = 380; py < 680; py += 4) for (let px = 640; px < 1280; px += 4) { if (!on(px, py)) continue; let r = 1; while (r < 80 && on(px + r, py) && on(px - r, py) && on(px, py + r) && on(px, py - r) && on(px + r, py + r) && on(px - r, py - r)) r++; const score = r - Math.hypot(px - 960, py - 520) * .02; if (score > br) { br = score; best = [px, py]; } }
+  B.fp = best;
+  B.sub = splitWord($('b-sub'));
+}
+async function renderB(t) {
+  const lt = t - 7.5;
+  const im = await getImg(frameSrc('welcome-ru-v2', lt + 1.5));
+  const ctx = B.ctx; ctx.globalCompositeOperation = 'source-over'; ctx.clearRect(0, 0, 1920, 1080);
+  // zoom: exponential fly-through into the letter
+  const z = P(t, 9.0, 10.1, E.in3);
+  const sc = Math.exp(L(0, Math.log(70), z)) * L(1.06, 1, P(t, 7.5, 9.2, E.out));
+  const [fx, fy] = B.fp;
+  // text mask
+  const tc = B.tc.getContext('2d'); tc.setTransform(1, 0, 0, 1, 0, 0); tc.clearRect(0, 0, 1920, 1080);
+  tc.translate(fx, fy); tc.scale(sc, sc); tc.translate(-fx, -fy);
+  tc.font = bFont(); tc.textAlign = 'center'; tc.textBaseline = 'middle'; tc.letterSpacing = '6px'; tc.fillStyle = '#fff';
+  const rev = P(t, 7.55, 8.6, E.out);
+  tc.globalAlpha = rev; tc.fillText(B.word, 960, 520); tc.globalAlpha = 1;
+  // footage
+  const fsc = L(1.18, 1.0, P(t, 7.5, 12.5, E.out));
+  ctx.filter = 'contrast(1.1) saturate(1.1)'; drawCover(ctx, im, 1920, 1080, fsc, .5, .35); ctx.filter = 'none';
+  ctx.globalCompositeOperation = 'destination-in'; ctx.drawImage(B.tc, 0, 0);
+  ctx.globalCompositeOperation = 'source-over';
+  // gold hairline outline while small
+  const olA = (1 - z) * P(t, 7.9, 8.8);
+  if (olA > .01) { ctx.save(); ctx.translate(fx, fy); ctx.scale(sc, sc); ctx.translate(-fx, -fy); ctx.font = bFont(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.letterSpacing = '6px'; ctx.strokeStyle = `rgba(236,201,120,${(olA * .8).toFixed(3)})`; ctx.lineWidth = 1.4 / sc; ctx.strokeText(B.word, 960, 520); ctx.restore(); }
+  // after the fly-through make sure the whole frame is footage
+  if (z > .97) { ctx.filter = 'contrast(1.1) saturate(1.1)'; drawCover(ctx, im, 1920, 1080, fsc, .5, .35); ctx.filter = 'none'; }
+  $('b-shade').style.opacity = P(t, 10.0, 10.8);
+  rv($('b-eye'), t, 10.6, 999, {dy: 14});
+  letters(B.sub, t, 10.35, {stag: .05, d: .9});
+  $('b-sub').style.backgroundPosition = `${L(120, -20, P(t, 10.4, 12.4, E.io))}% 0`;
+}
+
+// ============ C: rhythmic montage ============
+const SHOTS = [
+  {t: 12.5, type: 'center', clip: 'lounge', word: 'Тишина', note: 'Зона отдыха<br>и травяной чай'},
+  {t: 15.0, type: 'cols', clips: ['atmo-candle', 'atmo-sauna', 'atmo-tea'], word: 'Тепло'},
+  {t: 17.5, type: 'side', clip: 'atmo-massage', word: 'Мастера', word2: 'из Таиланда', note: 'Дипломы лучших школ массажа Таиланда'},
+  {t: 20.0, type: 'circle', clip: 'hammam', word: 'Хаммам'},
+  {t: 22.5, type: 'duo', clips: ['petals', 'atmo-towel'], word: 'Ритуалы'},
+  {t: 25.0, type: 'center', clip: 'garden', word: 'Гармония', note: 'Для тела<br>и души', right: true},
+];
+function mkClip(cls = '') { const d = document.createElement('div'); d.className = 'clip ' + cls; d.innerHTML = '<img><div class="grade"></div>'; return d; }
+function initC() {
+  const C = $('C');
+  SHOTS.forEach((s, k) => {
+    const sh = document.createElement('div'); sh.className = 'abs shot'; sh.style.inset = '0'; sh.style.display = 'none'; s.el = sh;
+    const bg = document.createElement('div'); bg.className = 'bgblur'; bg.innerHTML = '<img>'; sh.appendChild(bg); s.bg = bg.firstChild;
+    s.panels = [];
+    const add = (clip, l, tp, w, h) => { const c = mkClip(); Object.assign(c.style, {left: l + 'px', top: tp + 'px', width: w + 'px', height: h + 'px'}); c.dataset.clip = clip; sh.appendChild(c); s.panels.push(c); return c; };
+    if (s.type === 'center') add(s.clip, s.right ? 1060 : 656, 0, 608, 1080);
+    if (s.type === 'cols') { s.clips.forEach((c, i) => add(c, i * 640, -60, 640, 1200)); const sc = document.createElement('div'); sc.className = 'abs'; sc.style.cssText = 'inset:0;background:rgba(10,2,14,.42)'; sh.appendChild(sc); }
+    if (s.type === 'side') add(s.clip, 1160, 0, 640, 1080);
+    if (s.type === 'circle') { const c = add(s.clip, 510, 90, 900, 900); c.style.borderRadius = '50%'; }
+    if (s.type === 'duo') { add(s.clips[0], 150, 60, 560, 960); add(s.clips[1], 1210, 60, 560, 960); }
+    const w = document.createElement('div'); w.className = 'word'; s.w = w; sh.appendChild(w);
+    if (s.type === 'center') { w.style.fontSize = '210px'; w.style.fontStyle = 'italic'; w.style.color = '#fff'; w.style.top = '420px'; if (s.right) { w.style.left = '120px'; } else { w.style.left = '110px'; } }
+    if (s.type === 'cols') { w.style.cssText += 'left:0;right:0;text-align:center;top:360px;font-size:330px;font-weight:500;'; }
+    if (s.type === 'side') { w.style.cssText += 'left:130px;top:300px;font-size:190px;font-weight:500;'; }
+    if (s.type === 'circle') { w.style.cssText += 'left:0;right:0;text-align:center;top:700px;font-size:230px;font-weight:500;text-shadow:0 10px 60px rgba(0,0,0,.6)'; }
+    if (s.type === 'duo') { w.style.cssText += 'left:0;right:0;text-align:center;top:410px;font-size:230px;font-style:italic;text-shadow:0 10px 60px rgba(0,0,0,.6)'; }
+    w.textContent = s.word; s.ws = splitWord(w);
+    if (s.word2) { const w2 = document.createElement('div'); w2.className = 'word foil'; w2.style.cssText = 'left:130px;top:480px;font-size:190px;font-style:italic;font-weight:400'; w2.textContent = s.word2; sh.appendChild(w2); s.w2 = w2; s.ws2 = splitWord(w2); }
+    if (s.note) { const n = document.createElement('div'); n.className = 'abs eyebrow'; n.innerHTML = s.note; n.style.lineHeight = '1.9';
+      if (s.type === 'side') n.style.cssText += 'left:136px;top:760px;'; else if (s.right) n.style.cssText += 'left:1720px;top:470px;transform-origin:0 0;'; else n.style.cssText += 'left:1330px;top:500px;';
+      if (s.right) { n.style.left = '124px'; n.style.top = '660px'; }
+      sh.appendChild(n); s.note = n; }
+    C.appendChild(sh);
+  });
+}
+function renderC(t) {
+  SHOTS.forEach((s, k) => {
+    const a = s.t, z = a + BAR;
+    const on = t >= a && t < z + (k === SHOTS.length - 1 ? 0 : 0);
+    s.el.style.display = on ? 'block' : 'none'; if (!on) return;
+    const lt = t - a;
+    // punch-in on the cut
+    const cut = P(t, a, a + .7, E.out5);
+    s.el.style.transform = `scale(${L(1.09, 1, cut).toFixed(4)})`;
+    s.el.style.filter = cut < .98 ? `blur(${((1 - cut) * 6).toFixed(1)}px)` : 'none';
+    const mainClip = s.clip || s.clips[0];
+    setFrame(s.bg, mainClip, lt, .8);
+    s.panels.forEach((p, i) => {
+      setFrame(p.firstChild, p.dataset.clip, lt + i * .3, .85);
+      const drift = P(t, a, z, E.lin);
+      if (s.type === 'cols') { p.style.transform = `translateY(${((i % 2 ? 1 : -1) * L(-40, 40, drift)).toFixed(1)}px)`; }
+      else if (s.type === 'circle') { const r = L(0, 50, P(t, a, a + 1.0, E.out5)); p.style.clipPath = `circle(${r.toFixed(2)}% at 50% 50%)`; p.firstChild.style.transform = `scale(${L(1.25, 1.05, drift)})`; }
+      else if (s.type === 'duo') { const ii = P(t, a + i * .12, a + .9 + i * .12, E.out5); p.style.transform = `translateY(${((1 - ii) * (i ? -140 : 140)).toFixed(1)}px) rotate(${(i ? 2.5 : -2.5)}deg)`; p.style.opacity = ii; }
+      else { const ii = P(t, a, a + .8, E.out5); p.style.clipPath = `inset(${((1 - ii) * 50).toFixed(2)}% 0 ${((1 - ii) * 50).toFixed(2)}% 0)`; p.firstChild.style.transform = `scale(${L(1.18, 1.03, drift)})`; }
+    });
+    letters(s.ws, t, a + .15, {stag: .05, d: .8, dy: 70});
+    if (s.ws2) letters(s.ws2, t, a + .45, {stag: .04, d: .8, dy: 70});
+    if (s.note && s.note.style) rv(s.note, t, a + .6, 999, {dy: 16});
+    // slow drift on the word
+    s.w.style.transform = `translateX(${L(-12, 12, P(t, a, z, E.lin)).toFixed(1)}px)`;
+  });
+}
+
+// ============ D: map ============
+const KZ = [[49.2,46.4],[48.6,47.4],[46.7,48.5],[46.8,49.9],[47.6,50.4],[48.8,50.6],[48.6,51.2],[50.8,51.7],[52.3,51.6],[53.5,51.3],[55.0,50.9],[56.5,51.1],[58.5,51.1],[60.0,50.8],[61.4,50.8],[61.7,51.8],[60.2,52.3],[61.0,52.9],[61.2,53.9],[62.8,54.0],[65.2,54.6],[68.2,54.9],[69.8,55.3],[71.2,54.9],[73.4,54.0],[73.2,53.5],[75.4,53.9],[76.9,54.4],[77.9,53.3],[80.0,50.9],[81.5,50.8],[83.4,51.0],[84.2,50.6],[85.0,50.1],[86.2,49.5],[87.3,49.1],[85.8,48.4],[85.5,47.1],[83.0,47.2],[82.3,46.2],[82.6,45.3],[80.4,45.0],[80.1,44.0],[80.4,42.9],[79.2,42.8],[77.5,42.9],[75.8,42.9],[74.2,43.2],[73.4,42.5],[71.8,42.8],[70.9,42.2],[69.1,41.4],[68.4,40.7],[67.9,41.2],[66.6,41.2],[66.0,42.9],[64.0,43.6],[62.0,43.5],[61.1,44.4],[58.6,45.6],[56.0,45.0],[56.0,41.3],[55.4,41.3],[54.3,42.3],[53.0,42.1],[52.5,41.8],[52.7,42.7],[51.3,43.2],[51.2,44.4],[50.3,44.6],[51.3,45.3],[52.9,45.3],[53.2,46.2],[51.2,47.0],[49.9,46.6]];
+const CITIES = [
+  {n: 'Астана', c: '2 салона', lon: 71.45, lat: 51.17, dx: -40, dy: -70},
+  {n: 'Экибастуз', c: '1 салон', lon: 75.32, lat: 51.72, dx: -150, dy: 22},
+  {n: 'Павлодар', c: '1 салон', lon: 76.97, lat: 52.29, dx: 14, dy: -74},
+  {n: 'Караганда', c: '1 салон', lon: 73.10, lat: 49.80, dx: 22, dy: -6},
+  {n: 'Семей', c: '1 салон', lon: 80.25, lat: 50.41, dx: 22, dy: -18},
+  {n: 'Жезказган', c: '1 салон', lon: 67.71, lat: 47.78, dx: -60, dy: 22},
+  {n: 'Алматы', c: '2 салона', lon: 76.89, lat: 43.24, dx: 22, dy: -14},
+];
+const MX0 = 45.8, MY0 = 55.8, MSX = 32.5, MSY = 32.5 / Math.cos(48 * Math.PI / 180) * .67 * 1.12;
+function proj(lon, lat) { return [660 + (lon - MX0) * 28.1, 190 + (MY0 - lat) * 42]; }
+function initD() {
+  const svg = $('map'); const ns = 'http://www.w3.org/2000/svg';
+  const pts = KZ.map(([a, b]) => proj(a, b));
+  const dstr = 'M' + pts.map(p => p.map(v => v.toFixed(1)).join(',')).join('L') + 'Z';
+  svg.innerHTML = `<defs><filter id="gl" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <radialGradient id="fillg" cx="55%" cy="45%" r="60%"><stop offset="0" stop-color="#6e2f92" stop-opacity=".45"/><stop offset="1" stop-color="#2b0b3d" stop-opacity=".25"/></radialGradient>
+    <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="7" cy="7" r="1.6" fill="#ecc978" fill-opacity=".22"/></pattern>
+    <clipPath id="kzc"><path d="${dstr}"/></clipPath></defs>
+    <path id="kz-fill" d="${dstr}" fill="url(#fillg)"/>
+    <rect id="kz-dots" x="0" y="0" width="1920" height="1080" fill="url(#dots)" clip-path="url(#kzc)"/>
+    <path id="kz-line" d="${dstr}" fill="none" stroke="#ecc978" stroke-width="2.2" stroke-linejoin="round" filter="url(#gl)"/>
+    <g id="arcs"></g><g id="cdots"></g>`;
+  const line = $('kz-line'); const len = line.getTotalLength(); line.style.strokeDasharray = len; line.dataset.len = len;
+  const arcs = $('arcs'), cd = $('cdots'), labels = $('d-labels');
+  const [ax, ay] = proj(CITIES[0].lon, CITIES[0].lat);
+  CITIES.forEach((c, i) => {
+    const [x, y] = proj(c.lon, c.lat); c.x = x; c.y = y;
+    if (i > 0) { const mx = (ax + x) / 2, my = (ay + y) / 2 - Math.hypot(x - ax, y - ay) * .35;
+      const p = document.createElementNS(ns, 'path'); p.setAttribute('d', `M${ax},${ay} Q${mx},${my} ${x},${y}`); p.setAttribute('fill', 'none'); p.setAttribute('stroke', '#ecc978'); p.setAttribute('stroke-width', '1.6'); p.setAttribute('stroke-opacity', '.75'); arcs.appendChild(p); const l = p.getTotalLength(); p.style.strokeDasharray = l; p.dataset.len = l; c.arc = p; }
+    const g = document.createElementNS(ns, 'g'); g.innerHTML = `<circle r="30" fill="none" stroke="#ecc978" stroke-width="1.5"/><circle r="11" fill="#ecc978" fill-opacity=".25"/><circle r="5.5" fill="#fff4d2" filter="url(#gl)"/>`; g.setAttribute('transform', `translate(${x},${y})`); cd.appendChild(g); c.g = g;
+    const lb = document.createElement('div'); lb.className = 'city-l'; lb.innerHTML = `${c.n}<small>${c.c}</small>`; lb.style.left = (x + c.dx) + 'px'; lb.style.top = (y + c.dy) + 'px'; labels.appendChild(lb); c.lb = lb;
+  });
+}
+const CITY_T = [30.0, 30.625, 31.25, 31.875, 32.5, 33.125, 33.75];
+function renderD(t) {
+  const line = $('kz-line'); const len = +line.dataset.len; const k = P(t, 27.6, 30.0, E.io);
+  line.style.strokeDashoffset = (len * (1 - k)).toFixed(1);
+  $('kz-fill').style.opacity = P(t, 29.0, 30.4); $('kz-dots').style.opacity = P(t, 29.3, 30.8);
+  CITIES.forEach((c, i) => {
+    const a = CITY_T[i]; const ii = P(t, a, a + .6, E.out5);
+    c.g.style.opacity = ii; const ring = c.g.firstChild; const rp = cl((t - a) / 1.6) % 1; ring.setAttribute('r', (8 + rp * 38).toFixed(1)); ring.style.opacity = (ii * (1 - rp)).toFixed(3);
+    rv(c.lb, t, a + .1, 999, {dy: 14, blur: 6, d: .7});
+    if (c.arc) { const al = +c.arc.dataset.len; c.arc.style.strokeDashoffset = (al * (1 - P(t, a - .5, a + .1, E.io))).toFixed(1); }
+  });
+  rv($('d-num'), t, 28.2, 999, {dy: 40, d: 1.1});
+  const cnt = Math.round(L(0, 9, P(t, 28.4, 34.0, E.out))); $('d-n').textContent = cnt;
+  $('d-n').style.backgroundPosition = `${L(100, 0, P(t, 28, 35, E.lin))}% 0`;
+  // slow camera push
+  $('D').style.transform = `scale(${L(1.0, 1.06, P(t, 27.5, 35, E.lin))})`;
+}
+
+// ============ E: 3D certificates ============
+const DESIGNS = ['a/d_2a6ec6fd-9c72-4c69-b2b8-4e86ab1f81f4.webp', 'a/d_bb3f42fe-f0ad-4eda-aa19-a3a523419801.webp', 'a/d_4f36d759-47c3-4eeb-a1eb-ac3344de49db.webp'];
+function initE() {
+  const deck = $('deck');
+  const mk = (id, front) => { const c = document.createElement('div'); c.className = 'card3'; c.id = id; c.innerHTML = `<div class="face front">${front}</div><div class="face back"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><img src="a/icon-gold.png" style="height:150px;width:auto"></div></div><div class="sheen"></div>`; deck.appendChild(c); return c; };
+  DESIGNS.forEach((d, i) => mk('cd' + i, `<img src="${d}">`));
+  mk('hero', `<div class="bd"></div><div class="bd2"></div>
+    <img class="hf" src="a/logo-white.png" style="left:48px;top:44px;height:62px;width:auto">
+    <div class="hf eyebrow" style="right:48px;top:62px;font-size:12px;letter-spacing:.34em">Подарочный сертификат</div>
+    <div class="hf serif" style="left:48px;top:150px;font-size:86px;line-height:1;font-weight:500">Ты и Я</div>
+    <div class="hf" style="left:50px;top:246px;font-size:15px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.72)">SPA для пар · 2,5 часа</div>
+    <div class="hf serif foil" style="left:48px;top:292px;font-size:66px;font-weight:600;line-height:1">70 000 ₸</div>
+    <div class="hf" style="left:50px;top:372px;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:rgba(236,201,120,.85)">imbir.kz · действует 3 месяца</div>
+    <img class="hf" src="a/qr.svg" style="right:48px;bottom:44px;width:128px;height:128px">`);
+}
+function card(el, {x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, s = 1, o = 1}) {
+  el.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,${z.toFixed(1)}px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) rotateZ(${rz.toFixed(2)}deg) scale(${s.toFixed(4)})`;
+  el.style.opacity = o.toFixed(3);
+  el.lastChild.style.backgroundPosition = `${(L(120, -20, cl(.5 + ry / 90 + rz / 60))).toFixed(1)}% 0`;
+}
+const FAN = [{x: -500, y: 70, rz: -16, ry: 14}, {x: -170, y: 10, rz: -5, ry: 5}, {x: 170, y: 10, rz: 5, ry: -5}, {x: 500, y: 70, rz: 16, ry: -14}];
+function renderE(t) {
+  const ids = ['cd0', 'cd1', 'hero', 'cd2'];
+  rv($('e-title'), t, 35.4, 39.6, {dy: 14});
+  ids.forEach((id, i) => {
+    const el = $(id), f = FAN[i];
+    const a = 35.1 + i * .22; const k = P(t, a, a + 1.5, E.out5);
+    const flo = Math.sin((t - 35) * 1.4 + i) * 10;
+    let st3 = {x: L(f.x * .2, f.x, k), y: L(500, f.y, k) + flo, z: L(-1800, i * 6, k), rx: L(40, 0, k), ry: L(f.ry + 200 * (i % 2 ? 1 : -1), f.ry, k), rz: L(0, f.rz, k), s: .92, o: P(t, a, a + .4)};
+    if (id === 'hero') {
+      const m = P(t, 39.4, 40.9, E.io);
+      st3 = {x: L(st3.x, 420, m), y: L(st3.y, 10 + Math.sin((t - 35) * 1.1) * 12, m), z: L(st3.z, 160, m), rx: L(st3.rx, 6 + Math.sin(t * .9) * 3, m), ry: L(st3.ry, -16 + Math.sin(t * .7) * 7, m), rz: L(st3.rz, -3, m), s: L(.92, 1.08, m), o: st3.o};
+      const fly = P(t, 44.3, 45.0, E.in3); st3.z += fly * 1300; st3.x = L(st3.x, 0, fly); st3.rx = L(st3.rx, 0, fly); st3.ry = L(st3.ry, 0, fly);
+    } else {
+      const d = P(t, 39.2 + i * .08, 40.3 + i * .08, E.in3);
+      st3.y += d * 900; st3.rx += d * 50; st3.o *= 1 - d; st3.rz += d * (i < 2 ? -20 : 20);
+    }
+    card(el, st3);
+  });
+  rv($('e-left'), t, 40.3, 44.5, {dx: -40, dy: 0, d: 1.1});
+  for (let k = 1; k <= 4; k++) rv($('e-b' + k), t, 41.1 + (k - 1) * .3, 44.5, {dx: -40, dy: 0, blur: 6});
+}
+
+// ============ F: ring of programs ============
+const PROGS = ['Гармония тела', 'Тайское чудо', 'Suay', 'Энергия Таиланда', 'Foot релакс', 'Страна улыбок', 'Ты и Я', 'Антистресс', 'Энергия Сиама', 'Спа Релакс', 'Sabai Sabai', 'Маленький Будда'];
+let F_EL = [];
+const FEAT = [['Тайское чудо', 'от 19 000 ₸'], ['Гармония тела', 'от 22 000 ₸'], ['Sabai Sabai', 'от 38 000 ₸'], ['Suay', 'от 40 000 ₸'], ['Ты и Я', 'от 70 000 ₸']];
+function initF() {
+  F_EL = PROGS.map(p => { const d = document.createElement('div'); d.className = 'rn'; d.textContent = p; $('ring-front').appendChild(d); return d; });
+  FEAT.forEach(([a, b]) => { const d = document.createElement('div'); d.className = 'feat'; d.innerHTML = `${a}<b>${b}</b>`; $('f-feat').appendChild(d); });
+  $('F').style.perspective = '1200px';
+}
+function renderF(t) {
+  const lt = t - 45;
+  const acc = P(t, 51.3, 52.5, E.in3);
+  const rot = lt * .3 + acc * 2.2;
+  const ns = F_EL; const back = $('ring-back'), front = $('ring-front');
+  const R = 820, RY = 190, cx = 960, cy = 560;
+  const appear = P(t, 45.2, 46.6, E.out5);
+  [...ns].forEach((el, i) => {
+    const ph = i / PROGS.length * Math.PI * 2 + rot;
+    const x = Math.sin(ph) * R * L(.6, 1, appear), zz = Math.cos(ph); // zz=1 front
+    const y = zz * RY - 20;
+    const sc = L(.62, 1.3, (zz + 1) / 2);
+    const o = L(.32, 1, (zz + 1) / 2) * appear;
+    const w = el.offsetWidth || 300;
+    el.style.transform = `translate(${(cx + x - w / 2).toFixed(1)}px,${(cy + y - 28).toFixed(1)}px) scale(${sc.toFixed(3)}) scaleX(${L(.55, 1, Math.abs(Math.cos(ph))).toFixed(3)})`;
+    el.style.opacity = o.toFixed(3);
+    el.style.color = zz > .8 ? `rgb(${L(255, 236, (zz - .8) * 5)|0},${L(255, 201, (zz - .8) * 5)|0},${L(255, 120, (zz - .8) * 5)|0})` : '#fff';
+    el.style.filter = zz < 0 ? `blur(${(-zz * 2.5 + acc * 6).toFixed(1)}px)` : (acc > .05 ? `blur(${(acc * 6).toFixed(1)}px)` : 'none');
+    const tgt = zz < 0 ? back : front; if (el.parentNode !== tgt) { /* keep order stable by index */ tgt.appendChild(el); }
+  });
+  const ii = P(t, 45.1, 46.3, E.out5);
+  st($('f-icon'), {o: ii, s: L(.7, 1, ii) * (1 + Math.sin(lt * 2) * .015)});
+  $('f-glow').style.opacity = ii * (.8 + .2 * Math.sin(lt * 2.4)); $('f-glow').style.transform = `scale(${1 + acc * .6})`;
+  rv($('f-title'), t, 45.5, 999, {dy: 20});
+  const fe = $('f-feat').children;
+  [...fe].forEach((el, k) => { const a = 46.6 + k * 1.0, z = a + 1.0; rv(el, t, a, k === fe.length - 1 ? 999 : z, {dy: 26, d: .5, dz: .3}); });
+  $('F').style.transform = `scale(${L(1, 1.35, acc)})`;
+}
+
+// ============ G: gold ink finale ============
+const G = {};
+function valueNoise(W, H, seed) {
+  const out = new Float32Array(W * H);
+  const octs = [[40, .5], [18, .27], [8, .15], [3.5, .08]];
+  for (const [cell, amp] of octs) {
+    const gw = Math.ceil(W / cell) + 2, gh = Math.ceil(H / cell) + 2; const g = new Float32Array(gw * gh);
+    for (let i = 0; i < g.length; i++) g[i] = rnd(i * 1.37 + seed + cell * 7.1);
+    for (let y = 0; y < H; y++) { const fy = y / cell, iy = fy | 0, ty = fy - iy, sy = ty * ty * (3 - 2 * ty);
+      for (let x = 0; x < W; x++) { const fx = x / cell, ix = fx | 0, tx = fx - ix, sx = tx * tx * (3 - 2 * tx);
+        const a = g[iy * gw + ix], b = g[iy * gw + ix + 1], c = g[(iy + 1) * gw + ix], d = g[(iy + 1) * gw + ix + 1];
+        out[y * W + x] += amp * (a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy); } }
+  }
+  let mn = 1e9, mx = -1e9; for (const v of out) { mn = Math.min(mn, v); mx = Math.max(mx, v); } for (let i = 0; i < out.length; i++) out[i] = (out[i] - mn) / (mx - mn);
+  return out;
+}
+function initG() {
+  G.W = 960; G.H = 540; G.noise = valueNoise(G.W, G.H, 3.3);
+  G.ctx = $('g-cv').getContext('2d');
+  G.mask = document.createElement('canvas'); G.mask.width = G.W; G.mask.height = G.H; G.md = G.mask.getContext('2d').createImageData(G.W, G.H);
+  G.edge = document.createElement('canvas'); G.edge.width = G.W; G.edge.height = G.H; G.ed = G.edge.getContext('2d').createImageData(G.W, G.H);
+  G.txt = document.createElement('canvas'); G.txt.width = 1920; G.txt.height = 1080;
+  G.tmp = document.createElement('canvas'); G.tmp.width = 1920; G.tmp.height = 1080;
+  G.dust = $('g-dust').getContext('2d');
+  // text layers: [draw fn, reveal start, reveal end, hide start, hide end]
+  G.layers = [
+    {draw: c => { c.font = '500 168px "Cormorant Garamond"'; c.fillStyle = '#fff'; c.fillText('Тепло Таиланда', 960, 440); }, a: 52.8, b: 54.3, c: 56.3, d: 57.0},
+    {draw: c => { c.font = 'italic 400 124px "Cormorant Garamond"'; const g = c.createLinearGradient(560, 0, 1360, 0); g.addColorStop(0, '#b08a3c'); g.addColorStop(.5, '#fff0c8'); g.addColorStop(1, '#c49a48'); c.fillStyle = g; c.fillText('себе или в подарок', 960, 600); }, a: 53.9, b: 55.4, c: 56.4, d: 57.1},
+    {draw: c => { c.font = '500 250px "Cormorant Garamond"'; c.letterSpacing = '8px'; const g = c.createLinearGradient(520, 0, 1400, 0); g.addColorStop(0, '#a47d2e'); g.addColorStop(.3, '#ecc978'); g.addColorStop(.5, '#fff4d2'); g.addColorStop(.7, '#ecc978'); g.addColorStop(1, '#a47d2e'); c.fillStyle = g; c.fillText('imbir.kz', 960, 560); c.letterSpacing = '0px'; }, a: 57.0, b: 58.8, c: 99, d: 100},
+  ];
+}
+function inkPass(k, edgeBoost) {
+  // k in [0,1] reveal amount
+  const th = 1.08 - k * 1.16, n = G.noise, md = G.md.data, ed = G.ed.data;
+  for (let i = 0, j = 0; i < n.length; i++, j += 4) {
+    const v = n[i] - th; const a = v <= 0 ? 0 : v >= .035 ? 1 : v / .035;
+    md[j + 3] = a * 255;
+    const e = v > -.01 && v < .07 ? (1 - Math.abs(v - .025) / .045) : 0; const ee = e > 0 ? e * edgeBoost : 0;
+    ed[j] = 255; ed[j + 1] = 214; ed[j + 2] = 140; ed[j + 3] = Math.min(255, ee * 255);
+  }
+  G.mask.getContext('2d').putImageData(G.md, 0, 0); G.edge.getContext('2d').putImageData(G.ed, 0, 0);
+}
+async function renderG(t) {
+  const lt = t - 52.5;
+  const bg = $('g-bg').firstChild; setFrame(bg, 'lounge', lt, .5); bg.style.filter = 'blur(10px) brightness(.8) saturate(1.2)'; bg.style.transform = `scale(${L(1.08, 1.2, P(t, 52.5, 62.5, E.lin))})`;
+  $('g-bg').style.opacity = P(t, 52.5, 53.6) * .9;
+  // dust
+  const dc = G.dust; dc.clearRect(0, 0, 1920, 1080); dc.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 140; i++) { const y = ((rnd(i) * 1080 - lt * (14 + rnd(i + 3) * 30)) % 1080 + 1080) % 1080, x = rnd(i + 9) * 1920 + Math.sin(lt * .6 + i) * 20; const a = (.2 + .5 * rnd(i + 5)) * (.6 + .4 * Math.sin(lt * 2 + i)); const r = 1 + rnd(i + 7) * 2.5;
+    const g = dc.createRadialGradient(x, y, 0, x, y, r * 4); g.addColorStop(0, `rgba(236,201,120,${a.toFixed(3)})`); g.addColorStop(1, 'rgba(236,201,120,0)'); dc.fillStyle = g; dc.beginPath(); dc.arc(x, y, r * 4, 0, 6.283); dc.fill(); }
+  const ctx = G.ctx; ctx.clearRect(0, 0, 1920, 1080);
+  for (const Ly of G.layers) {
+    const kin = P(t, Ly.a, Ly.b, E.sine), kout = P(t, Ly.c, Ly.d, E.sine);
+    const k = kin * (1 - kout); if (k <= 0) continue;
+    const tc = G.txt.getContext('2d'); tc.setTransform(1, 0, 0, 1, 0, 0); tc.clearRect(0, 0, 1920, 1080); tc.textAlign = 'center'; tc.textBaseline = 'middle'; Ly.draw(tc);
+    inkPass(k, kin < 1 || kout > 0 ? 1 : 0);
+    const m = G.tmp.getContext('2d'); m.globalCompositeOperation = 'source-over'; m.clearRect(0, 0, 1920, 1080); m.drawImage(G.txt, 0, 0);
+    m.globalCompositeOperation = 'destination-in'; m.imageSmoothingEnabled = true; m.drawImage(G.mask, 0, 0, 1920, 1080);
+    // glowing edges only where the glyphs are
+    m.globalCompositeOperation = 'source-over';
+    ctx.drawImage(G.tmp, 0, 0);
+    if (k < 1) { const e2 = G.tmp.getContext('2d'); e2.globalCompositeOperation = 'source-over'; e2.clearRect(0, 0, 1920, 1080); e2.drawImage(G.edge, 0, 0, 1920, 1080); e2.globalCompositeOperation = 'destination-in'; e2.drawImage(G.txt, 0, 0);
+      ctx.globalCompositeOperation = 'lighter'; ctx.filter = 'blur(3px)'; ctx.drawImage(G.tmp, 0, 0); ctx.filter = 'none'; ctx.drawImage(G.tmp, 0, 0); ctx.globalCompositeOperation = 'source-over'; }
+  }
+  // final url shimmer (redraw sheen by gradient band over url once fully revealed)
+  const sh = P(t, 59.2, 61.0, E.io);
+  if (sh > 0 && sh < 1) { ctx.save(); ctx.globalCompositeOperation = 'source-atop'; const x = L(400, 1520, sh); const g = ctx.createLinearGradient(x - 160, 0, x + 160, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,250,235,.75)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(0, 420, 1920, 280); ctx.restore(); }
+  const ii = P(t, 57.6, 58.8, E.out5); st($('g-icon'), {o: ii, y: (1 - ii) * 20, s: L(.8, 1, ii)}); $('g-icon').style.filter = 'drop-shadow(0 0 24px rgba(236,201,120,.5))';
+  rv($('g-btn'), t, 58.8, 999, {dy: 24, pre: 'translateX(-50%)'});
+  rv($('g-ph'), t, 59.3, 999, {dy: 16});
+}
+
+// ============ global overlays ============
+const CUTS = [7.5, 12.5, 15, 17.5, 20, 22.5, 25, 27.5, 35, 45, 52.5];
+let grainTiles = [];
+function initGrain() {
+  for (let k = 0; k < 8; k++) { const c = document.createElement('canvas'); c.width = 960; c.height = 540; const x = c.getContext('2d'); const d = x.createImageData(960, 540);
+    for (let i = 0; i < d.data.length; i += 4) { const v = 128 + (rnd(i * .013 + k * 91.7) - .5) * 180 * (rnd(i * .007 + k) > .5 ? 1 : .6); d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } x.putImageData(d, 0, 0); grainTiles.push(c); }
+}
+function overlays(t) {
+  const f = Math.floor(t * FPS);
+  $('grain').getContext('2d').drawImage(grainTiles[f % grainTiles.length], 0, 0);
+  // flashes on cuts
+  let fl = 0; for (const c of CUTS) { const d = t - c; if (d > -.06 && d < .45) fl = Math.max(fl, d < 0 ? (d + .06) / .06 : 1 - E.out(d / .45)); }
+  const big = [5.0, 52.5]; for (const c of big) { const d = t - c; if (d > -.1 && d < .9) fl = Math.max(fl, d < 0 ? (d + .1) / .1 : 1 - E.out(d / .9)); }
+  $('flash').style.opacity = (fl * .85).toFixed(3);
+  // light leak drifting during montage and certificates
+  const lk = Math.max(P(t, 12.5, 13.5) * (1 - P(t, 26.8, 27.5)), P(t, 35, 36) * (1 - P(t, 44.5, 45)));
+  const lx = 50 + Math.sin(t * .7) * 40, ly = 30 + Math.cos(t * .5) * 30;
+  $('leak').style.background = `radial-gradient(900px 600px at ${lx}% ${ly}%, rgba(255,150,60,.35), rgba(255,120,40,0) 70%), radial-gradient(700px 500px at ${100 - lx}% ${100 - ly}%, rgba(170,70,255,.22), rgba(0,0,0,0) 70%)`;
+  $('leak').style.opacity = (lk * (.55 + .45 * Math.sin(t * 1.9))).toFixed(3);
+  // letterbox during B-C
+  const lb = Math.max(P(t, 7.5, 8.4, E.io) * (1 - P(t, 27.0, 27.6, E.io)), 0);
+  $('lbT').style.height = $('lbB').style.height = (lb * 118).toFixed(1) + 'px';
+  $('black').style.opacity = Math.max(1 - P(t, 0, .8, E.io), P(t, DUR - 1.0, DUR - .1, E.io)).toFixed(3);
+}
+
+async function seek(t) {
+  pending.length = 0;
+  const jobs = [];
+  for (const [id, [a, z]] of Object.entries(SC)) {
+    const el = $(id); const on = t >= a && t < z || (id === 'G' && t >= a);
+    el.style.display = on ? 'block' : 'none'; if (!on) continue;
+    if (id === 'A') renderA(t); if (id === 'B') jobs.push(renderB(t)); if (id === 'C') renderC(t);
+    if (id === 'D') renderD(t); if (id === 'E') renderE(t); if (id === 'F') renderF(t); if (id === 'G') jobs.push(renderG(t));
+  }
+  overlays(t);
+  await Promise.all(jobs); await Promise.all(pending);
+}
+window.seek = seek;
+window.ready = (async () => {
+  await Promise.all(['400', '500', '600'].flatMap(w => [`${w} 40px "Cormorant Garamond"`, `italic ${w} 40px "Cormorant Garamond"`, `${w} 20px Montserrat`]).map(f => document.fonts.load(f, 'Таиланд abc ₸')));
+  await document.fonts.ready;
+  await Promise.all([...document.images].map(i => i.decode().catch(() => {})));
+  await initA(); initB(); initC(); initD(); initE(); initF(); initG(); initGrain();
+  await Promise.all(DESIGNS.map(getImg));
+  return document.fonts.check('500 40px "Cormorant Garamond"', 'Таиланд');
+})();
+</script>
+</body>
+</html>
