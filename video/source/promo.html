@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Imbir promo</title>
+
+<link href="fonts/fonts.css" rel="stylesheet">
+<style>
+:root{
+  --plum-990:#1c0726; --plum-950:#2b0b3d; --plum-800:#4d295d; --plum-700:#6e2f92; --plum-50:#faf4fd;
+  --gold:#b69244; --gold-hi:#ecc978; --gold-dim:#7d5c15; --ink:#2b1734;
+  --serif:"Cormorant Garamond", serif; --sans:"Montserrat", sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:#000}
+#stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--plum-990);font-family:var(--sans);color:#fff}
+.scene{position:absolute;inset:0;display:none;will-change:opacity,transform}
+.dark{background:radial-gradient(1200px 800px at 70% 30%, #3a1450 0%, var(--plum-950) 45%, var(--plum-990) 100%)}
+.light{background:radial-gradient(1100px 700px at 80% 10%, #f3e6fa 0%, var(--plum-50) 55%, #f6eefa 100%);color:var(--ink)}
+.abs{position:absolute}
+.eyebrow{font-family:var(--sans);font-weight:500;font-size:17px;letter-spacing:.32em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:22px}
+.eyebrow:before{content:"";width:56px;height:1px;background:var(--gold)}
+.light .eyebrow{color:var(--gold-dim)} .light .eyebrow:before{background:var(--gold-dim)}
+.h{font-family:var(--serif);font-weight:500;line-height:1.02;letter-spacing:-.005em}
+.h i{font-style:italic;font-weight:400;color:var(--gold-hi)}
+.light .h i{color:var(--gold)}
+.p{font-family:var(--sans);font-weight:300;font-size:25px;line-height:1.6;color:rgba(255,255,255,.82)}
+.light .p{color:rgba(43,23,52,.72)}
+.vid{position:absolute;overflow:hidden;background:#140419}
+.vid img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform-origin:50% 50%}
+.goldframe{position:absolute;border:1px solid rgba(217,188,121,.55)}
+.gold-text{background:linear-gradient(100deg,#a8822f 0%,#ecc978 35%,#fff1c9 50%,#ecc978 65%,#a8822f 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+#particles{position:absolute;inset:0;pointer-events:none}
+#vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 60%, rgba(10,0,15,.45) 100%)}
+#fade{position:absolute;inset:0;background:#000;pointer-events:none}
+
+/* S1 */
+#s1-icon{left:50%;top:50%;width:190px;margin-left:-95px;margin-top:-190px}
+#s1-glow{left:50%;top:50%;width:900px;height:900px;margin:-450px 0 0 -450px;border-radius:50%;background:radial-gradient(circle, rgba(236,201,120,.22) 0%, rgba(236,201,120,.06) 35%, rgba(0,0,0,0) 65%)}
+#s1-logo{left:50%;top:50%;width:820px;margin-left:-410px;margin-top:-170px}
+#s1-line{left:50%;top:50%;height:1px;width:520px;margin-left:-260px;margin-top:118px;background:linear-gradient(90deg,transparent,var(--gold-hi),transparent)}
+#s1-tag{left:0;right:0;top:50%;margin-top:160px;text-align:center;font-size:21px;letter-spacing:.42em;text-transform:uppercase;color:rgba(255,255,255,.75);font-weight:400}
+
+/* S2 */
+#s2-shade{position:absolute;inset:0;background:linear-gradient(90deg, rgba(28,7,38,.92) 0%, rgba(28,7,38,.72) 30%, rgba(28,7,38,.0) 58%), linear-gradient(0deg, rgba(28,7,38,.55), rgba(28,7,38,0) 30%)}
+#s2-h{left:140px;top:300px;font-size:136px}
+#s2-e{left:140px;top:240px}
+#s2-p{left:140px;top:640px;width:640px;font-size:24px}
+#s2-url{left:140px;top:820px;display:flex;gap:18px;align-items:center}
+.pill{font-family:var(--sans);font-weight:600;font-size:18px;letter-spacing:.2em;text-transform:uppercase;padding:20px 38px;border-radius:999px}
+.pill.gold{background:linear-gradient(135deg,#d7b56a,#b69244);color:#2b0b3d}
+.pill.ghost{border:1px solid rgba(255,255,255,.4);color:#fff}
+
+/* S3 */
+#s3-e{left:140px;top:170px}
+#s3-h{left:140px;top:225px;font-size:112px}
+#s3-p{left:140px;top:500px;width:780px}
+.stats{left:140px;top:790px;display:flex;gap:64px}
+.stat .n{font-family:var(--serif);font-size:96px;font-weight:500;line-height:1;color:#fff}
+.stat .l{margin-top:10px;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold-hi);font-weight:500}
+.stat{padding-left:26px;border-left:1px solid rgba(217,188,121,.35)}
+#s3-v1{left:1060px;top:110px;width:500px;height:860px;border-radius:4px}
+#s3-f1{left:1090px;top:140px;width:500px;height:860px}
+#s3-v2{left:1440px;top:520px;width:340px;height:450px;box-shadow:0 30px 80px rgba(0,0,0,.5);border:6px solid #f5ecdf}
+
+/* S4 */
+#s4-e{left:140px;top:95px}
+#s4-h{left:140px;top:140px;font-size:96px}
+.panel{position:absolute;top:290px;width:380px;height:620px}
+.panel .vid{inset:0;border-radius:3px}
+.panel .lab{position:absolute;left:0;top:640px;font-size:17px;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.85);font-weight:500}
+.panel .lab b{color:var(--gold-hi);font-weight:500;margin-right:14px}
+#s4-note{right:140px;top:175px;width:560px;text-align:right;font-size:22px}
+
+/* S5 */
+#s5-e{left:140px;top:95px}
+#s5-h{left:140px;top:140px;font-size:96px}
+.card{position:absolute;top:300px;width:262px;height:600px;background:#fff;border-radius:6px;box-shadow:0 24px 60px rgba(77,41,93,.14);overflow:hidden}
+.card .im{height:330px;background-size:cover;background-position:center}
+.card .bd{padding:22px 22px}
+.card .nm{font-family:var(--serif);font-size:38px;font-weight:600;color:var(--ink);line-height:1}
+.card .ds{margin-top:12px;font-size:15px;line-height:1.5;color:rgba(43,23,52,.7);height:90px}
+.card .pr{position:absolute;bottom:22px;left:22px;font-size:21px;font-weight:600;color:var(--gold-dim)}
+.card .bdg{position:absolute;top:16px;left:16px;display:flex;gap:8px}
+.card .bdg span{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;padding:7px 12px;border-radius:99px;background:rgba(28,7,38,.72);color:#fff}
+.card .bdg span.hit{background:linear-gradient(135deg,#e2c178,#b69244);color:#2b0b3d}
+#s5-foot{left:0;right:0;top:960px;text-align:center;font-size:22px;color:rgba(43,23,52,.7)}
+#s5-foot b{color:var(--gold-dim);font-weight:600}
+
+/* S6 */
+#s6-e{left:140px;top:200px}
+#s6-h{left:140px;top:255px;font-size:124px}
+#s6-p{left:140px;top:545px;width:760px}
+.check{left:140px;display:flex;align-items:center;gap:22px;font-size:25px;font-weight:400;color:rgba(255,255,255,.9)}
+.check:before{content:"";width:34px;height:1px;background:var(--gold-hi)}
+#s6-photo{left:1120px;top:150px;width:640px;height:780px}
+#s6-frame{left:1090px;top:120px;width:640px;height:780px}
+
+/* S7 */
+#s7-e{left:140px;top:95px}
+#s7-h{left:140px;top:140px;font-size:88px}
+.step{position:absolute;left:140px;width:430px;display:flex;gap:24px;align-items:flex-start}
+.step .num{flex:none;width:54px;height:54px;border-radius:50%;border:1px solid rgba(77,41,93,.3);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:28px;font-weight:600;color:var(--plum-800);background:#fff}
+.step .tt{font-family:var(--serif);font-size:36px;font-weight:600;color:var(--ink);line-height:1.05;margin-top:2px}
+.step .st{font-size:17px;color:rgba(43,23,52,.62);margin-top:6px}
+.step.on .num{background:linear-gradient(135deg,#e2c178,#b69244);border-color:transparent;color:#2b0b3d}
+#browser{left:620px;top:215px;width:1180px;height:782px;border-radius:14px;background:#fff;box-shadow:0 40px 120px rgba(77,41,93,.28),0 0 0 1px rgba(77,41,93,.08);overflow:hidden}
+#browser .bar{height:44px;background:#f1eaf5;display:flex;align-items:center;padding:0 18px;gap:9px}
+#browser .dot{width:13px;height:13px;border-radius:50%}
+#browser .url{margin-left:24px;flex:1;height:28px;border-radius:8px;background:#fff;display:flex;align-items:center;padding-left:16px;font-size:15px;color:#6f6477;letter-spacing:.02em}
+#browser .url b{color:var(--ink);font-weight:600}
+#browser .scr{position:absolute;left:0;top:44px;width:1180px;height:738px;overflow:hidden}
+#browser .scr img{position:absolute;left:0;top:0;width:1180px;height:738px;transform-origin:50% 40%}
+
+/* S8 */
+.phone{position:absolute;width:372px;height:790px;border-radius:56px;background:#0d0310;padding:14px;box-shadow:0 40px 100px rgba(0,0,0,.55),0 0 0 2px rgba(217,188,121,.35)}
+.phone .sc{position:relative;width:344px;height:762px;border-radius:44px;overflow:hidden;background:#fff}
+.phone .sc img{position:absolute;left:0;top:0;width:344px}
+.phone .notch{position:absolute;left:50%;top:26px;width:110px;height:30px;margin-left:-55px;border-radius:20px;background:#0d0310;z-index:3}
+#ph1{left:170px;top:150px}
+#ph2{left:590px;top:190px}
+#s8-e{left:1080px;top:250px}
+#s8-h{left:1080px;top:305px;font-size:112px}
+#s8-p{left:1080px;top:560px;width:700px}
+#s8-pills{left:1080px;top:760px;display:flex;gap:16px}
+.chip{font-size:17px;letter-spacing:.16em;text-transform:uppercase;padding:15px 26px;border-radius:999px;border:1px solid rgba(217,188,121,.5);color:var(--gold-hi);font-weight:500}
+#notif{left:300px;top:120px;width:560px;padding:22px 26px;border-radius:24px;background:rgba(255,255,255,.96);color:var(--ink);display:flex;gap:20px;align-items:center;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+#notif .ic{flex:none;width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#4d295d,#2b0b3d);display:flex;align-items:center;justify-content:center}
+#notif .t1{font-size:15px;font-weight:600;letter-spacing:.06em;color:#6f6477;text-transform:uppercase}
+#notif .t2{font-size:21px;font-weight:600;margin-top:4px}
+#notif .t3{font-size:16px;color:#6f6477;margin-top:4px}
+
+/* S9 */
+#s9-e{left:140px;top:120px}
+#s9-h{left:140px;top:170px;font-size:104px}
+.city{position:absolute;width:500px;display:flex;justify-content:space-between;align-items:baseline;padding-bottom:16px;border-bottom:1px solid rgba(77,41,93,.16)}
+.city .cn{font-family:var(--serif);font-size:50px;font-weight:600;color:var(--ink)}
+.city .cc{font-size:16px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-dim);font-weight:600}
+#s9-v{left:1320px;top:120px;width:460px;height:818px;border-radius:4px}
+#s9-f{left:1290px;top:150px;width:460px;height:818px;border-color:rgba(125,92,21,.45)}
+#s9-foot{left:140px;top:930px;font-size:22px;color:rgba(43,23,52,.7)}
+#s9-foot b{color:var(--ink);font-weight:600}
+
+/* S10 */
+#s10-shade{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%, rgba(28,7,38,.62) 0%, rgba(28,7,38,.9) 70%)}
+#s10-icon{left:50%;top:170px;width:92px;margin-left:-46px}
+#s10-k{left:0;right:0;top:320px;text-align:center;font-size:18px;letter-spacing:.42em;text-transform:uppercase;color:var(--gold-hi)}
+#s10-h{left:0;right:0;top:375px;text-align:center;font-size:118px}
+#s10-url{left:0;right:0;top:640px;text-align:center;font-family:var(--serif);font-size:150px;font-weight:500;letter-spacing:.04em;line-height:1}
+#s10-btn{left:50%;top:840px;transform:translateX(-50%)}
+#s10-ph{left:0;right:0;top:950px;text-align:center;font-size:22px;letter-spacing:.12em;color:rgba(255,255,255,.75)}
+</style>
+</head>
+<body>
+<div id="stage">
+
+<!-- S1 intro -->
+<section class="scene dark" id="S1">
+  <div class="abs" id="s1-glow"></div>
+  <img class="abs" id="s1-icon" src="a/icon-gold.png">
+  <img class="abs" id="s1-logo" src="a/logo-white.png">
+  <div class="abs" id="s1-line"></div>
+  <div class="abs" id="s1-tag">Сеть тайских спа-салонов · Казахстан</div>
+</section>
+
+<!-- S2 welcome -->
+<section class="scene" id="S2">
+  <div class="vid" id="s2-v" style="inset:0"><img></div>
+  <div id="s2-shade"></div>
+  <div class="abs eyebrow" id="s2-e">«Имбирь» — Thai Spa</div>
+  <div class="abs h" id="s2-h">Таиланд<br>начинается <i>здесь</i></div>
+  <div class="abs p" id="s2-p">Классический тайский массаж, масляные ритуалы и спа‑церемонии от дипломированных мастеров из Таиланда</div>
+  <div class="abs" id="s2-url"><span class="pill gold">imbir.kz</span></div>
+</section>
+
+<!-- S3 about -->
+<section class="scene dark" id="S3">
+  <div class="goldframe" id="s3-f1"></div>
+  <div class="vid" id="s3-v1"><img></div>
+  <div class="vid" id="s3-v2"><img></div>
+  <div class="abs eyebrow" id="s3-e">О нас</div>
+  <div class="abs h" id="s3-h">Мастера<br><i>из Таиланда</i></div>
+  <div class="abs p" id="s3-p">Дипломы лучших школ массажа Таиланда. Хаммам, сауна, раздельные мужские и женские зоны, душевые и зона отдыха.</div>
+  <div class="abs stats" id="s3-stats">
+    <div class="stat"><div class="n" data-to="9">9</div><div class="l">салонов</div></div>
+    <div class="stat"><div class="n" data-to="7">7</div><div class="l">городов</div></div>
+    <div class="stat"><div class="n" data-to="20" data-suf="+">20+</div><div class="l">программ</div></div>
+    <div class="stat"><div class="n" data-to="180">180</div><div class="l">минут ритуал</div></div>
+  </div>
+</section>
+
+<!-- S4 atmosphere -->
+<section class="scene dark" id="S4">
+  <div class="abs eyebrow" id="s4-e">Атмосфера</div>
+  <div class="abs h" id="s4-h">Загляните <i>внутрь</i></div>
+  <div class="abs p" id="s4-note">Каждый салон — маленький Таиланд: свечи, травяной чай и тишина</div>
+  <div id="s4-panels"></div>
+</section>
+
+<!-- S5 programs -->
+<section class="scene light" id="S5">
+  <div class="abs eyebrow" id="s5-e">Выбор гостей</div>
+  <div class="abs h" id="s5-h">Популярные <i>программы</i></div>
+  <div id="s5-cards"></div>
+  <div class="abs" id="s5-foot"><b>20+ программ</b> — тайский и oil‑массаж, SPA для пар и компаний, ритуалы до 3 часов</div>
+</section>
+
+<!-- S6 gift -->
+<section class="scene dark" id="S6">
+  <div class="goldframe" id="s6-frame"></div>
+  <div class="vid" id="s6-photo"><img src="a/gift-couple.webp"></div>
+  <div class="abs eyebrow" id="s6-e">Подарочные сертификаты</div>
+  <div class="abs h" id="s6-h">Подарите<br><i>тепло Таиланда</i></div>
+  <div class="abs p" id="s6-p">Электронный сертификат за 2 минуты — на программу или на сумму</div>
+  <div class="abs check" id="s6-c1" style="top:680px">Действует 3 месяца во всех салонах сети</div>
+  <div class="abs check" id="s6-c2" style="top:740px">Доставка на email — сразу или к дате</div>
+  <div class="abs check" id="s6-c3" style="top:800px">Оплата онлайн: Kaspi.kz или карта</div>
+  <div class="abs check" id="s6-c4" style="top:860px">Номиналы от 20 000 до 200 000 ₸</div>
+</section>
+
+<!-- S7 builder -->
+<section class="scene light" id="S7">
+  <div class="abs eyebrow" id="s7-e">Как оформить</div>
+  <div class="abs h" id="s7-h">6 простых <i>шагов</i></div>
+  <div id="s7-steps"></div>
+  <div class="abs" id="browser">
+    <div class="bar"><span class="dot" style="background:#e7b4b4"></span><span class="dot" style="background:#ecd6a0"></span><span class="dot" style="background:#bfe0c2"></span>
+      <div class="url">🔒&nbsp;&nbsp;<b>imbir.kz</b>/ru/create</div></div>
+    <div class="scr" id="s7-scr"></div>
+  </div>
+</section>
+
+<!-- S8 mobile / result -->
+<section class="scene dark" id="S8">
+  <div class="phone" id="ph1"><div class="notch"></div><div class="sc"><img id="ph1-img" src="shots/m_home_full.jpg"></div></div>
+  <div class="phone" id="ph2"><div class="notch"></div><div class="sc"><img id="ph2-img" src="shots/m_create.jpg"></div></div>
+  <div class="abs" id="notif">
+    <div class="ic"><img src="a/icon-gold.png" style="height:40px"></div>
+    <div><div class="t1">Imbir Thai Spa · сейчас</div><div class="t2">Айгерим, вам подарок!</div><div class="t3">Сертификат «Ты и Я» · PDF с QR‑кодом</div></div>
+  </div>
+  <div class="abs eyebrow" id="s8-e">Готово</div>
+  <div class="abs h" id="s8-h">Сертификат —<br><i>уже в почте</i></div>
+  <div class="abs p" id="s8-p">Красивый PDF с QR‑кодом придёт получателю на email: мгновенно или в назначенную дату.</div>
+  <div class="abs" id="s8-pills"><span class="chip">RU · KK · EN</span><span class="chip">Удобно с телефона</span></div>
+</section>
+
+<!-- S9 salons -->
+<section class="scene light" id="S9">
+  <div class="goldframe" id="s9-f"></div>
+  <div class="vid" id="s9-v"><img></div>
+  <div class="abs eyebrow" id="s9-e">Где нас найти</div>
+  <div class="abs h" id="s9-h">9 салонов <i>в 7 городах</i></div>
+  <div id="s9-cities"></div>
+  <div class="abs" id="s9-foot">Все салоны — <b>ежедневно с 10:00 до 22:00</b></div>
+</section>
+
+<!-- S10 outro -->
+<section class="scene" id="S10">
+  <div class="vid" id="s10-v" style="inset:0"><img></div>
+  <div id="s10-shade"></div>
+  <img class="abs" id="s10-icon" src="a/icon-gold.png">
+  <div class="abs" id="s10-k">Imbir Thai Spa Classic</div>
+  <div class="abs h" id="s10-h">Тепло Таиланда — <i>себе или в подарок</i></div>
+  <div class="abs gold-text" id="s10-url">imbir.kz</div>
+  <div class="abs" id="s10-btn"><span class="pill gold">Подарить сертификат</span></div>
+  <div class="abs" id="s10-ph">+7 708 111 8098 &nbsp;·&nbsp; ежедневно 10:00–22:00</div>
+</section>
+
+<canvas id="particles" width="1920" height="1080"></canvas>
+<div id="vignette"></div>
+<div id="fade"></div>
+</div>
+
+<script>
+const FPS = 30, DUR = 76;
+const FR = {"atmo-candle":89,"atmo-details":62,"atmo-hammam":115,"atmo-locker":73,"atmo-lounge":69,"atmo-massage":113,"atmo-rooms":120,"atmo-sauna":73,"atmo-tea":82,"atmo-towel":142,"garden":66,"hammam":105,"lounge":124,"petals":111,"reception":90,"welcome-ru-v2":300};
+
+const E = {
+  out: t => 1 - Math.pow(1 - t, 3),
+  out5: t => 1 - Math.pow(1 - t, 5),
+  io: t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2,
+  lin: t => t,
+};
+const cl = x => Math.max(0, Math.min(1, x));
+const P = (t, a, b, e = E.out) => e(cl((t - a) / (b - a)));
+const L = (a, b, k) => a + (b - a) * k;
+const $ = id => document.getElementById(id);
+
+function st(el, {o = 1, x = 0, y = 0, s = 1, r = 0, b = 0, extra = ''} = {}) {
+  el.style.opacity = o.toFixed(4);
+  el.style.transform = `${extra} translate(${x.toFixed(2)}px,${y.toFixed(2)}px) scale(${s.toFixed(4)}) rotate(${r.toFixed(3)}deg)`;
+  el.style.filter = b > 0.05 ? `blur(${b.toFixed(2)}px)` : 'none';
+}
+// reveal element: in at a, out at z
+function rv(el, t, a, z, {d = .9, dy = 38, dx = 0, dz = .55, blur = 10, s0 = 1, extra = ''} = {}) {
+  const i = P(t, a, a + d, E.out5);
+  const o = 1 - P(t, z - dz, z, E.io);
+  st(el, {o: i * o, x: (1 - i) * dx, y: (1 - i) * dy - (1 - o) * 16, b: (1 - i) * blur, s: L(s0, 1, i), extra});
+}
+
+// video frame helper: ping-pong through frames
+const pending = [];
+function setFrame(img, clip, lt, speed = 1) {
+  const n = FR[clip];
+  let f = Math.floor(Math.max(0, lt) * FPS * speed);
+  const period = 2 * (n - 1);
+  f = f % period; if (f >= n) f = period - f;
+  const src = `frames/${clip}/${String(f + 1).padStart(4, '0')}.jpg`;
+  if (img.getAttribute('src') !== src) { img.setAttribute('src', src); pending.push(img); }
+}
+
+// scenes timing [start, end]
+const SC = {
+  S1: [0, 4.9], S2: [4.4, 13.3], S3: [12.8, 20.6], S4: [20.1, 29.6], S5: [29.1, 38.6],
+  S6: [38.1, 44.3], S7: [43.8, 57.6], S8: [57.1, 63.6], S9: [63.1, 69.2], S10: [68.7, 76],
+};
+const XF = .5;
+function sceneAlpha(t, [a, z]) {
+  if (t < a || t > z) return 0;
+  const i = a === 0 ? 1 : P(t, a, a + XF, E.io);
+  const o = z === DUR ? 1 : 1 - P(t, z - XF, z, E.io);
+  return Math.min(i, o);
+}
+
+// ---------- build dynamic DOM ----------
+const panelsA = [['atmo-rooms','Кабинеты'],['atmo-hammam','Хаммам'],['atmo-sauna','Сауна'],['atmo-lounge','Зона отдыха']];
+const panelsB = [['atmo-candle','Уют при свечах'],['atmo-tea','Чайная зона'],['atmo-towel','Забота в мелочах'],['petals','Ритуалы']];
+const PX = [140, 550, 960, 1370];
+const s4p = $('s4-panels');
+[...panelsA, ...panelsB].forEach(([c, l], k) => {
+  const d = document.createElement('div'); d.className = 'panel'; d.style.left = PX[k % 4] + 'px';
+  d.innerHTML = `<div class="vid"><img></div><div class="lab"><b>0${k + 1}</b>${l}</div>`;
+  d.dataset.clip = c; s4p.appendChild(d);
+});
+
+const progs = [
+  ['garmoniya-tela','Гармония тела','Расслабляющий Oil‑массаж','от 22 000 ₸','60–120 мин'],
+  ['taiskoe-chudo','Тайское чудо','Тайский традиционный массаж','от 19 000 ₸','60–120 мин'],
+  ['suay','Suay','Oil‑массаж с горячими травяными мешочками','от 40 000 ₸','120 мин'],
+  ['strana-ulybok','Страна улыбок','SPA для подруг, 3 часа: скраб, обёртывание, маска, массаж','от 90 000 ₸','3 гостя'],
+  ['ty-i-ya','Ты и Я','SPA для пар, 2,5 часа: скраб, Oil‑массаж и массаж головы','от 70 000 ₸','2 гостя'],
+  ['sabai-sabai','Sabai Sabai','Сет на 2 часа: пилинг, скраб и Oil‑массаж','от 38 000 ₸','120 мин'],
+];
+const s5c = $('s5-cards');
+progs.forEach(([img, nm, ds, pr, du], k) => {
+  const d = document.createElement('div'); d.className = 'card'; d.style.left = (114 + k * 286) + 'px';
+  d.innerHTML = `<div class="im" style="background-image:url(a/${img}.webp)"></div><div class="bdg"><span class="hit">Хит</span><span>${du}</span></div><div class="bd"><div class="nm">${nm}</div><div class="ds">${ds}</div></div><div class="pr">${pr}</div>`;
+  s5c.appendChild(d);
+});
+
+const steps = [
+  ['Дизайн','Открытка под любой повод'],
+  ['Подарок','Программа или сумма'],
+  ['Подпись','Кому, от кого и пожелание'],
+  ['Филиал','Город и салон'],
+  ['Отправка','Сразу или в выбранную дату'],
+  ['Оплата','Kaspi.kz или банковская карта'],
+];
+const s7s = $('s7-steps'), s7scr = $('s7-scr');
+steps.forEach(([a, b], k) => {
+  const d = document.createElement('div'); d.className = 'step'; d.style.top = (330 + k * 108) + 'px';
+  d.innerHTML = `<div class="num">${k + 1}</div><div><div class="tt">${a}</div><div class="st">${b}</div></div>`;
+  s7s.appendChild(d);
+  const im = document.createElement('img'); im.src = `shots/s${k + 1}.jpg`; s7scr.appendChild(im);
+});
+
+const cities = [['Астана','2 салона'],['Алматы','2 салона'],['Караганда','1 салон'],['Павлодар','1 салон'],['Семей','1 салон'],['Экибастуз','1 салон'],['Жезказган','1 салон']];
+const s9c = $('s9-cities');
+cities.forEach(([a, b], k) => {
+  const d = document.createElement('div'); d.className = 'city';
+  const col = k < 4 ? 0 : 1, row = k < 4 ? k : k - 4;
+  d.style.left = (140 + col * 560) + 'px'; d.style.top = (440 + row * 110) + 'px';
+  d.innerHTML = `<span class="cn">${a}</span><span class="cc">${b}</span>`;
+  s9c.appendChild(d);
+});
+
+// ---------- particles ----------
+const pc = $('particles').getContext('2d');
+function rnd(i) { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+const PARTS = Array.from({length: 70}, (_, i) => ({x: rnd(i) * 1920, y: rnd(i + 99) * 1080, r: .8 + rnd(i + 7) * 2.2, v: 12 + rnd(i + 3) * 26, ph: rnd(i + 5) * 6.28, a: .25 + rnd(i + 11) * .55}));
+function drawParticles(t, alpha) {
+  pc.clearRect(0, 0, 1920, 1080);
+  if (alpha <= 0.01) return;
+  for (const p of PARTS) {
+    const y = ((p.y - t * p.v) % 1080 + 1080) % 1080;
+    const x = p.x + Math.sin(t * .5 + p.ph) * 22;
+    const tw = .55 + .45 * Math.sin(t * 1.7 + p.ph * 3);
+    const g = pc.createRadialGradient(x, y, 0, x, y, p.r * 4);
+    g.addColorStop(0, `rgba(236,201,120,${(p.a * tw * alpha).toFixed(3)})`);
+    g.addColorStop(1, 'rgba(236,201,120,0)');
+    pc.fillStyle = g; pc.beginPath(); pc.arc(x, y, p.r * 4, 0, 6.283); pc.fill();
+  }
+}
+
+// ---------- per-scene renderers ----------
+const R = {};
+R.S1 = t => {
+  const gi = P(t, .2, 2.2);
+  st($('s1-glow'), {o: gi * (1 - P(t, 2.2, 3.2) * .4), s: L(.6, 1, gi)});
+  const ii = P(t, .3, 1.8, E.out5), io = P(t, 1.9, 2.7, E.io);
+  st($('s1-icon'), {o: ii * (1 - io), s: L(.82, 1, ii) * L(1, .7, io), y: -io * 40, b: (1 - ii) * 14 + io * 6});
+  const li = P(t, 2.2, 3.4, E.out5);
+  st($('s1-logo'), {o: li, s: L(1.08, 1, li), b: (1 - li) * 12});
+  const ln = P(t, 2.9, 3.9, E.io);
+  $('s1-line').style.opacity = ln; $('s1-line').style.transform = `scaleX(${ln})`;
+  rv($('s1-tag'), t, 3.2, 99, {dy: 20, d: 1});
+};
+R.S2 = t => {
+  const lt = t - 4.4 + .2;
+  setFrame($('s2-v').firstChild, 'welcome-ru-v2', lt);
+  st($('s2-v').firstChild, {s: L(1.02, 1.09, cl(lt / 9))});
+  rv($('s2-e'), t, 5.2, 99, {dx: -30, dy: 0});
+  rv($('s2-h'), t, 5.45, 99, {dy: 50, blur: 14, d: 1.2});
+  rv($('s2-p'), t, 6.3, 99, {dy: 30});
+  rv($('s2-url'), t, 7.0, 99, {dy: 20, s0: .9});
+};
+function countUp(el, t, a) {
+  const to = +el.dataset.to, suf = el.dataset.suf || '';
+  const k = P(t, a, a + 1.4, E.out);
+  el.textContent = Math.round(to * k) + (k > .98 ? suf : '');
+}
+R.S3 = t => {
+  const lt = t - 12.8;
+  setFrame($('s3-v1').firstChild, 'atmo-massage', lt, .8);
+  setFrame($('s3-v2').firstChild, 'hammam', lt, .8);
+  st($('s3-v1').firstChild, {s: L(1.12, 1.02, cl(lt / 8))});
+  st($('s3-v2').firstChild, {s: L(1.1, 1.0, cl(lt / 8))});
+  rv($('s3-v1'), t, 13.1, 99, {dy: 60, blur: 0, d: 1.3});
+  rv($('s3-f1'), t, 13.5, 99, {dx: 30, dy: 30, blur: 0, d: 1.4});
+  rv($('s3-v2'), t, 14.2, 99, {dy: 80, blur: 0, d: 1.2});
+  rv($('s3-e'), t, 13.3, 99, {dx: -30, dy: 0});
+  rv($('s3-h'), t, 13.5, 99, {dy: 50, blur: 14, d: 1.1});
+  rv($('s3-p'), t, 14.2, 99);
+  const stats = $('s3-stats').children;
+  for (let k = 0; k < 4; k++) { rv(stats[k], t, 15.2 + k * .25, 99, {dy: 30}); countUp(stats[k].firstChild, t, 15.2 + k * .25); }
+};
+R.S4 = t => {
+  rv($('s4-e'), t, 20.4, 99, {dx: -30, dy: 0});
+  rv($('s4-h'), t, 20.6, 99, {dy: 45, blur: 14, d: 1.1});
+  rv($('s4-note'), t, 21.2, 99, {dy: 20});
+  const ps = $('s4-panels').children;
+  for (let k = 0; k < 8; k++) {
+    const set = k < 4 ? 0 : 1, j = k % 4;
+    const a = set ? 24.9 + j * .16 : 20.8 + j * .16;
+    const z = set ? 99 : 25.2 + j * .12;
+    const el = ps[k];
+    if (t < a - .1 || t > z + .1) { el.style.display = 'none'; continue; }
+    el.style.display = 'block';
+    const i = P(t, a, a + 1.0, E.out5), o = 1 - P(t, z - .6, z, E.io);
+    st(el, {o: Math.min(i, o), y: (1 - i) * 90 - (1 - o) * 60, b: 0});
+    const img = el.firstChild.firstChild;
+    setFrame(img, el.dataset.clip, t - a, .8);
+    st(img, {s: L(1.14, 1.02, P(t, a, a + 5, E.lin))});
+  }
+};
+R.S5 = t => {
+  rv($('s5-e'), t, 29.5, 99, {dx: -30, dy: 0});
+  rv($('s5-h'), t, 29.7, 99, {dy: 45, blur: 14, d: 1.1});
+  const cs = $('s5-cards').children;
+  for (let k = 0; k < 6; k++) {
+    const a = 30.1 + k * .18;
+    const i = P(t, a, a + 1.1, E.out5);
+    const fl = Math.sin((t - a) * 1.3 + k) * 5 * i;
+    st(cs[k], {o: i, y: (1 - i) * 120 + fl, s: L(.94, 1, i)});
+    const im = cs[k].firstChild; im.style.transform = `scale(${L(1.15, 1.02, P(t, a, a + 7, E.lin)).toFixed(4)})`;
+  }
+  rv($('s5-foot'), t, 32.2, 99, {dy: 20});
+};
+R.S6 = t => {
+  const lt = t - 38.1;
+  rv($('s6-photo'), t, 38.4, 99, {dy: 60, blur: 0, d: 1.3});
+  rv($('s6-frame'), t, 38.8, 99, {dx: -30, dy: -30, blur: 0, d: 1.3});
+  st($('s6-photo').firstChild, {s: L(1.14, 1.03, cl(lt / 6))});
+  rv($('s6-e'), t, 38.5, 99, {dx: -30, dy: 0});
+  rv($('s6-h'), t, 38.7, 99, {dy: 50, blur: 14, d: 1.1});
+  rv($('s6-p'), t, 39.4, 99);
+  for (let k = 1; k <= 4; k++) rv($('s6-c' + k), t, 39.9 + (k - 1) * .35, 99, {dx: -40, dy: 0, blur: 6});
+};
+const S7T0 = 44.5, S7D = 2.15;
+R.S7 = t => {
+  rv($('s7-e'), t, 44.0, 99, {dx: -30, dy: 0});
+  rv($('s7-h'), t, 44.2, 99, {dy: 45, blur: 14, d: 1.1});
+  const br = $('browser');
+  const bi = P(t, 44.2, 45.4, E.out5);
+  st(br, {o: bi, y: (1 - bi) * 120, s: L(.92, 1, bi)});
+  const ss = $('s7-steps').children, ims = $('s7-scr').children;
+  const cur = cl((t - S7T0) / S7D) >= 0 ? Math.min(5, Math.max(0, Math.floor((t - S7T0) / S7D))) : 0;
+  for (let k = 0; k < 6; k++) {
+    rv(ss[k], t, 44.6 + k * .12, 99, {dx: -30, dy: 0, blur: 4});
+    const on = k === cur;
+    ss[k].classList.toggle('on', on);
+    if (!on) ss[k].style.opacity = (parseFloat(ss[k].style.opacity) * .5).toFixed(3);
+    const a = S7T0 + k * S7D;
+    const fin = k === 0 ? 1 : P(t, a - .15, a + .2, E.io);
+    const vis = t < a + S7D + .3 || k === 5;
+    ims[k].style.display = (t >= a - .4 && vis) ? 'block' : 'none';
+    ims[k].style.opacity = fin;
+    ims[k].style.transform = `scale(${L(1, 1.035, P(t, a - .3, a + S7D + .3, E.lin)).toFixed(4)})`;
+  }
+};
+R.S8 = t => {
+  const lt = t - 57.1;
+  rv($('ph1'), t, 57.4, 99, {dy: 140, blur: 0, d: 1.3});
+  rv($('ph2'), t, 57.7, 99, {dy: 160, blur: 0, d: 1.3});
+  // scroll the home page inside phone 1
+  const img = $('ph1-img'); const h = img.naturalHeight ? img.naturalHeight * 344 / img.naturalWidth : 8000;
+  const sc = P(t, 58.4, 63.4, E.io) * Math.min(h - 762, 2600);
+  img.style.transform = `translateY(${-sc.toFixed(1)}px)`;
+  const ni = P(t, 59.2, 60.2, E.out5);
+  st($('notif'), {o: ni, y: (1 - ni) * -80, s: L(.9, 1, ni)});
+  rv($('s8-e'), t, 57.6, 99, {dx: -30, dy: 0});
+  rv($('s8-h'), t, 57.8, 99, {dy: 50, blur: 14, d: 1.1});
+  rv($('s8-p'), t, 58.5, 99);
+  rv($('s8-pills'), t, 59.2, 99, {dy: 20});
+};
+R.S9 = t => {
+  const lt = t - 63.1;
+  setFrame($('s9-v').firstChild, 'reception', lt, .7);
+  st($('s9-v').firstChild, {s: L(1.12, 1.02, cl(lt / 6))});
+  rv($('s9-v'), t, 63.4, 99, {dy: 60, blur: 0, d: 1.3});
+  rv($('s9-f'), t, 63.8, 99, {dx: 30, dy: 30, blur: 0, d: 1.3});
+  rv($('s9-e'), t, 63.5, 99, {dx: -30, dy: 0});
+  rv($('s9-h'), t, 63.7, 99, {dy: 45, blur: 14, d: 1.1});
+  const cs = $('s9-cities').children;
+  for (let k = 0; k < 7; k++) rv(cs[k], t, 64.3 + k * .14, 99, {dy: 30, blur: 6});
+  rv($('s9-foot'), t, 65.6, 99, {dy: 20});
+};
+R.S10 = t => {
+  const lt = t - 68.7;
+  setFrame($('s10-v').firstChild, 'lounge', lt, .55);
+  const vi = $('s10-v').firstChild; st(vi, {s: L(1.05, 1.15, cl(lt / 7.3)), b: 5});
+  rv($('s10-icon'), t, 69.2, 99, {dy: 20, s0: .7});
+  rv($('s10-k'), t, 69.5, 99, {dy: 16});
+  rv($('s10-h'), t, 69.7, 99, {dy: 40, blur: 14, d: 1.2});
+  rv($('s10-url'), t, 70.6, 99, {dy: 30, blur: 18, d: 1.4, s0: .92});
+  // shimmer on url
+  $('s10-url').style.backgroundPosition = `${L(-600, 600, P(t, 71.2, 73.2, E.io))}px 0`;
+  rv($('s10-btn'), t, 71.4, 99, {dy: 20, extra: 'translateX(-50%)'});
+  rv($('s10-ph'), t, 71.8, 99, {dy: 16});
+};
+
+async function seek(t) {
+  pending.length = 0;
+  let dark = 0;
+  for (const [id, span] of Object.entries(SC)) {
+    const el = $(id), a = sceneAlpha(t, span);
+    if (a <= 0) { el.style.display = 'none'; continue; }
+    el.style.display = 'block';
+    el.style.opacity = a.toFixed(4);
+    const lt = t - span[0];
+    el.style.transform = `scale(${L(1.015, 1, P(lt, 0, 1.2, E.out)).toFixed(4)})`;
+    R[id](t);
+    if (['S1', 'S3', 'S4', 'S6', 'S8', 'S10'].includes(id)) dark = Math.max(dark, a * (id === 'S2' ? 0 : 1));
+  }
+  drawParticles(t, dark * .9);
+  // global fade from/to black
+  $('fade').style.opacity = Math.max(1 - P(t, 0, .6, E.io), P(t, DUR - .8, DUR, E.io)).toFixed(3);
+  await Promise.all(pending.map(i => i.decode().catch(() => {})));
+}
+window.seek = seek;
+window.ready = (async () => {
+  await Promise.all(['400','500','600'].flatMap(w=>[`${w} 40px "Cormorant Garamond"`,`italic ${w} 40px "Cormorant Garamond"`,`300 20px Montserrat`,`${w} 20px Montserrat`]).map(f=>document.fonts.load(f,'Таиланд abc ₸')));
+  await document.fonts.ready;
+  await Promise.all([...document.images].map(i => i.decode().catch(() => {})));
+  // preload program images
+  await Promise.all(progs.map(p => new Promise(r => { const i = new Image(); i.onload = i.onerror = r; i.src = `a/${p[0]}.webp`; })));
+  return document.fonts.check('500 40px "Cormorant Garamond"','Таиланд') && document.fonts.check('400 20px Montserrat','Таиланд');
+})();
+</script>
+</body>
+</html>
