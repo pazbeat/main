@@ -1,7 +1,7 @@
 import json, sys, wave, numpy as np
 sys.path.insert(0, '..')
 DEV = sys.argv[1]; SR = 48000
-P = json.load(open(f'plan_{DEV}.json')); N = int((P['total'] + 0.5) * SR)
+P = json.load(open(f'plan2_{DEV}.json')); N = int((P['total'] + 0.5) * SR)
 def readwav(fn):
     with wave.open(fn) as w:
         a = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).reshape(-1, w.getnchannels()) / 32768.0
