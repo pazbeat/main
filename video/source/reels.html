@@ -363,6 +363,31 @@ async function initGB() {
   const logo = await getImg('a/logo-white.png'); const lt = new THREE.Texture(logo); lt.needsUpdate = true; lt.colorSpace = THREE.SRGBColorSpace;
   const foil = new THREE.MeshStandardMaterial({color: '#e8c17a', map: lt, metalness: 1, roughness: .2, transparent: true, alphaTest: .4, envMap: envTex, envMapIntensity: 1.5});
   const lw = 250, lh = lw * logo.naturalHeight / logo.naturalWidth; const lm = new THREE.Mesh(new THREE.PlaneGeometry(lw, lh), foil); lm.position.set(95, -40, BW / 2 + 1.2); body.add(lm);
+  // gold trim on the rim
+  [[0, BW / 2 - WT / 2, BW + 2, WT + 3], [0, -BW / 2 + WT / 2, BW + 2, WT + 3]].forEach(([x, z, w, d]) => { const m = RB(w, 5, d, 2, satin, 2); m.position.set(x, BH / 2 + 2, z); body.add(m); });
+  [[BW / 2 - WT / 2, 0], [-BW / 2 + WT / 2, 0]].forEach(([x, z]) => { const m = RB(WT + 3, 5, BW - 2 * WT, 2, satin, 2); m.position.set(x, BH / 2 + 2, z); body.add(m); });
+  // crinkled tissue paper sheets
+  const tn = (() => { const c = document.createElement('canvas'); c.width = c.height = 512; const x = c.getContext('2d'); x.fillStyle = '#808080'; x.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 260; i++) { const a = rnd(i) * 6.28, l = 40 + rnd(i + 1) * 160, x0 = rnd(i + 2) * 512, y0 = rnd(i + 3) * 512; x.strokeStyle = rnd(i + 4) < .5 ? 'rgba(255,255,255,.55)' : 'rgba(0,0,0,.45)'; x.lineWidth = 1 + rnd(i + 5) * 2.5;
+      x.beginPath(); x.moveTo(x0, y0); x.lineTo(x0 + Math.cos(a) * l * .5, y0 + Math.sin(a) * l * .5); x.lineTo(x0 + Math.cos(a + (rnd(i + 6) - .5)) * l, y0 + Math.sin(a + (rnd(i + 6) - .5)) * l); x.stroke(); }
+    x.filter = 'blur(1.5px)'; x.drawImage(c, 0, 0); const t = normalFromCanvas(c, 2.2); t.repeat.set(2, 2); return t; })();
+  GB.tissueMat = new THREE.MeshPhysicalMaterial({color: '#e6c992', roughness: .7, metalness: 0, normalMap: tn, normalScale: new THREE.Vector2(1, 1), sheen: 1, sheenColor: new THREE.Color('#fff4dc'), sheenRoughness: .6, side: THREE.DoubleSide, emissive: new THREE.Color('#ffc978'), emissiveIntensity: 0, envMap: envTex, envMapIntensity: .35});
+  const tnoise = valueNoise(64, 64, 9.7);
+  const nz = (u, v) => { const x = Math.min(63, Math.max(0, u * 63)), y = Math.min(63, Math.max(0, v * 63)); return tnoise[(y | 0) * 64 + (x | 0)]; };
+  GB.tissue = new THREE.Group(); GB.tissue.position.y = BH / 2; body.add(GB.tissue);
+  const inner = BW / 2 - WT, outer = BW / 2 + 2;
+  [[0, 0], [.55, 1], [1.05, 2]].forEach(([rot, k]) => {
+    const g = new THREE.RingGeometry(1, 2, 140, 36); const pa = g.attributes.position;
+    for (let i = 0; i < pa.count; i++) { const gx = pa.getX(i), gy = pa.getY(i); const th = Math.atan2(gy, gx); const rr = (Math.hypot(gx, gy) - 1);
+      const R = 318 + 34 * Math.sin(3 * th + k * 1.7) + 18 * Math.sin(5 * th + k * 2.9) + 10 * Math.sin(9 * th + k);
+      const x0 = Math.cos(th + rot) * rr * R, z0 = Math.sin(th + rot) * rr * R;
+      const d = Math.max(Math.abs(x0), Math.abs(z0)) + 1e-3; const n = nz(.5 + x0 / 700, .5 + z0 / 700);
+      let y, px = x0, pz = z0;
+      if (d < inner) { const r = d / inner; y = -10 + (1 - r * r) * 62 + (n - .5) * 64 + Math.sin(x0 * .045 + k) * Math.cos(z0 * .04) * 16 - Math.pow(r, 6) * 14; }
+      else if (d < outer) { y = 12 + (n - .5) * 4; px = x0 * (outer + 4) / d; pz = z0 * (outer + 4) / d; }
+      else { const over = d - outer; const f = (outer + 5 + over * .1) / d; y = 12 - over * 1.15 + (n - .5) * 8; px = x0 * f; pz = z0 * f; }
+      pa.setXYZ(i, px, y + k * 4, pz); }
+    g.computeVertexNormals(); const m = new THREE.Mesh(g, GB.tissueMat); m.castShadow = m.receiveShadow = true; GB.tissue.add(m); });
   // lid
   GB.lid = new THREE.Group(); GB.lid.position.set(0, BH / 2 + LH2 / 2 - 14, 0); GB.box.add(GB.lid);
   GB.lid.add(RB(LW2, LH2, LW2, 14, paper, 5));
@@ -413,11 +438,12 @@ function renderGB(t) {
   // light from inside
   const open = P(t, to + .05, to + .7, E.out);
   const topY = GB.box.position.y + BH / 2 * .8;
-  GB.innerGlow.material.opacity = open;
+  GB.innerGlow.material.opacity = open * .35; GB.tissueMat.emissiveIntensity = open * .14 * (1 + Math.sin(t * 3) * .05);
+  const fluff = P(t, to + .15, to + 1.0, E.out5); GB.tissue.scale.set(L(.94, 1, fluff), L(.25, 1, fluff), L(.94, 1, fluff)); GB.tissue.visible = t > to - .2;
   const pulse = 1 + Math.sin(t * 3) * .06;
-  GB.glow.material.opacity = open * L(1.0, .6, P(t, to + .6, to + 3, E.out)) * pulse; GB.glow.position.set(0, topY + 20, 160);
-  GB.beams.forEach((b, i) => { b.piv.position.y = topY - 20; b.piv.rotation.y = i / 7 * Math.PI + (t - to) * .15 * b.s; b.m.material.opacity = open * L(.7, .32, P(t, to + .4, to + 3, E.out)) * (.7 + .3 * Math.sin(t * 2 + i)); b.m.scale.y = L(.2, 1, P(t, to, to + .9, E.out5)); });
-  GB.spot.intensity = open * 5; GB.spot.position.set(0, topY - 120, 0);
+  GB.glow.material.opacity = open * L(.75, .32, P(t, to + .6, to + 3, E.out)) * pulse; GB.glow.position.set(0, topY + 60, 160);
+  GB.beams.forEach((b, i) => { b.piv.position.y = topY - 20; b.piv.rotation.y = i / 7 * Math.PI + (t - to) * .15 * b.s; b.m.material.opacity = open * L(.5, .18, P(t, to + .4, to + 3, E.out)) * (.7 + .3 * Math.sin(t * 2 + i)); b.m.scale.y = L(.2, 1, P(t, to, to + .9, E.out5)); });
+  GB.spot.intensity = open * 3.2; GB.spot.position.set(0, topY + 140, 80);
   const pos = GB.fp.geometry.attributes.position.array, sz = GB.fp.geometry.attributes.aSize.array, al = GB.fp.geometry.attributes.aAlpha.array;
   for (let i = 0; i < GB.NF; i++) { const f = GB.fd[i]; const a = t - f.b;
     if (a < 0 || a > f.life) { al[i] = 0; continue; }
