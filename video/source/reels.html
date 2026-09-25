@@ -31,7 +31,8 @@ canvas.full{position:absolute;left:0;top:0;width:1080px;height:1920px}
   <canvas class="full" id="gl" width="1080" height="1920"></canvas>
 
   <div class="layer" id="L1">
-    <img class="abs" id="h-logo" src="a/logo-white.png" style="left:140px;top:1190px;width:800px;-webkit-mask-image:linear-gradient(90deg,#000 0%,#000 40%,transparent 60%,transparent 100%);-webkit-mask-size:300% 100%">
+    <img class="abs" id="h-logo" src="a/logo-white.png" style="opacity:0">
+    <div class="abs" id="h-glint" style="opacity:0;-webkit-mask-image:url(a/logo-white.png);-webkit-mask-size:100% 100%;background:linear-gradient(100deg,rgba(236,201,120,0) 35%,rgba(236,201,120,.95) 47%,#fff6dc 50%,rgba(236,201,120,.95) 53%,rgba(236,201,120,0) 65%);background-size:300% 100%"></div>
     <div class="abs eyebrow center" id="h-sub" style="top:1470px">Тайский спа · Казахстан</div>
   </div>
 
@@ -47,6 +48,8 @@ canvas.full{position:absolute;left:0;top:0;width:1080px;height:1920px}
   </div>
 
   <div class="layer" id="L4">
+    <img class="abs" id="f-logo" src="a/logo-white.png" style="left:190px;top:560px;width:700px;opacity:0;filter:drop-shadow(0 0 14px rgba(236,201,120,.35))">
+    <div class="abs" id="f-glint" style="left:190px;top:560px;width:700px;height:204px;opacity:0;-webkit-mask-image:url(a/logo-white.png);-webkit-mask-size:100% 100%;background:linear-gradient(100deg,rgba(236,201,120,0) 35%,rgba(236,201,120,.95) 47%,#fff6dc 50%,rgba(236,201,120,.95) 53%,rgba(236,201,120,0) 65%);background-size:300% 100%"></div>
     <canvas class="full" id="ink" width="1080" height="1920"></canvas>
     <div class="abs center small" id="f-tag" style="top:1140px;font-family:var(--serif);font-style:italic;font-size:58px;letter-spacing:0;color:var(--gold-hi)">тепло Таиланда — себе или в подарок</div>
     <div class="abs" id="f-btn" style="left:50%;top:1260px"><span class="pill">Подарить сертификат</span></div>
@@ -185,44 +188,49 @@ function keyLights(scene) {
 
 
 
-// ================= SCENE 1: particles -> medallion -> logo (0 - 4.5) =================
-const S1 = {scene: new THREE.Scene()};
+// ================= SCENE 1: particles form the original logo (0 - 4.5) =================
+const S1 = {scene: new THREE.Scene(), LW: 880, cy: 120};
 async function initS1() {
   S1.scene.background = bgTexture('#2c0c3c', '#12041a', '#060108');
-  S1.key = keyLights(S1.scene);
-  const H0 = 400; const iw = Math.round(H0 * iconImg.naturalWidth / iconImg.naturalHeight);
-  const oc = document.createElement('canvas'); oc.width = iw; oc.height = H0; const o = oc.getContext('2d'); o.drawImage(iconImg, 0, 0, iw, H0);
-  const d = o.getImageData(0, 0, iw, H0).data; const pts = []; for (let y = 0; y < H0; y += 2) for (let x = 0; x < iw; x += 2) if (d[(y * iw + x) * 4 + 3] > 140) pts.push([x, y]);
-  const N = 5200; S1.pts = makePoints(N); S1.N = N; S1.cy = 200; S1.p = [];
+  const logo = await getImg('a/logo-white.png');
+  const LW = S1.LW, LH = Math.round(LW * logo.naturalHeight / logo.naturalWidth); S1.LH = LH;
+  const oc = document.createElement('canvas'); oc.width = LW; oc.height = LH; const o = oc.getContext('2d'); o.drawImage(logo, 0, 0, LW, LH);
+  const d = o.getImageData(0, 0, LW, LH).data; const pts = []; for (let y = 0; y < LH; y += 1) for (let x = 0; x < LW; x += 1) if (d[(y * LW + x) * 4 + 3] > 150) pts.push([x, y]);
+  const N = 9000; S1.pts = makePoints(N); S1.N = N; S1.p = [];
   for (let i = 0; i < N; i++) { const q = pts[Math.floor(rnd(i * 3.1) * pts.length)];
-    S1.p.push({tx: q[0] - iw / 2, ty: S1.cy + H0 / 2 - q[1] - 4, a0: rnd(i + 11) * 6.2832, r0: 260 + rnd(i + 13) * 900, z0: -9000 + rnd(i + 17) * 11000, d: rnd(i + 19) * .8, sz: 9 + rnd(i + 23) * 14, al: .65 + rnd(i + 29) * .35}); }
+    const tx = q[0] - LW / 2, ty = S1.cy + LH / 2 - q[1];
+    // formation sweeps left -> right
+    const d0 = (q[0] / LW) * .9 + rnd(i + 19) * .35;
+    S1.p.push({tx, ty, a0: rnd(i + 11) * 6.2832, r0: 260 + rnd(i + 13) * 900, z0: -9000 + rnd(i + 17) * 11000, d: d0, sz: 7 + rnd(i + 23) * 12, al: .6 + rnd(i + 29) * .4, warm: rnd(i + 31)}); }
   S1.scene.add(S1.pts);
-  S1.med = makeMedallion(); S1.med.position.set(0, S1.cy, 0); S1.scene.add(S1.med);
+  // DOM logo exactly on top of the particle target (1 world unit == 1 px at z=0)
+  const lg = $('h-logo'); lg.style.left = (540 - LW / 2) + 'px'; lg.style.width = LW + 'px'; lg.style.top = (960 - S1.cy - LH / 2) + 'px';
+  const gl = $('h-glint'); Object.assign(gl.style, {left: lg.style.left, top: lg.style.top, width: LW + 'px', height: LH + 'px'});
+  $('h-sub').style.top = (960 - S1.cy + LH / 2 + 70) + 'px';
 }
 function renderS1(t) {
   const pos = S1.pts.geometry.attributes.position.array, sz = S1.pts.geometry.attributes.aSize.array, al = S1.pts.geometry.attributes.aAlpha.array;
-  const fade = 1 - P(t, 2.3, 2.9, E.io);
+  const fade = 1 - P(t, 2.55, 3.2, E.io);
   for (let i = 0; i < S1.N; i++) { const p = S1.p[i];
-    const tt = Math.min(t, .6 + p.d);
+    const tt = Math.min(t, .4 + p.d);
     const a = p.a0 + tt * 1.3; let z = p.z0 + tt * 2600; z = ((z + 9000) % 11500 + 11500) % 11500 - 9000;
     const x0 = Math.cos(a) * p.r0, y0 = Math.sin(a) * p.r0 + S1.cy;
-    const k = E.io(cl((t - .6 - p.d) / 1.5));
-    const sw = (1 - k) * 1.2;
-    pos[i * 3] = L(x0, p.tx, k) + Math.sin(k * 3.14) * Math.cos(a) * 180 * sw; pos[i * 3 + 1] = L(y0, p.ty, k) + Math.sin(k * 3.14) * Math.sin(a) * 180 * sw; pos[i * 3 + 2] = L(z, 30, k);
-    sz[i] = p.sz * L(1, .45, k); al[i] = p.al * fade * cl(t / .25 + .4) * (.65 + .35 * Math.sin(t * 5 + i));
+    const k = E.io(cl((t - .4 - p.d) / 1.2));
+    const sw = (1 - k);
+    pos[i * 3] = L(x0, p.tx, k) + Math.sin(k * 3.14) * Math.cos(a) * 160 * sw; pos[i * 3 + 1] = L(y0, p.ty, k) + Math.sin(k * 3.14) * Math.sin(a) * 160 * sw; pos[i * 3 + 2] = L(z, 0, k);
+    sz[i] = p.sz * L(1, .32, k); al[i] = p.al * fade * cl(t / .25 + .4) * (.7 + .3 * Math.sin(t * 5 + i)) * L(1, 1.2, k);
   }
   S1.pts.geometry.attributes.position.needsUpdate = true; S1.pts.geometry.attributes.aSize.needsUpdate = true; S1.pts.geometry.attributes.aAlpha.needsUpdate = true;
-  const mi = P(t, 2.15, 2.8, E.io); setOpacity(S1.med, mi);
-  S1.med.rotation.y = L(-Math.PI, 0, P(t, 2.2, 3.7, E.out5)) + Math.sin(t * 1.1) * .08;
-  S1.med.rotation.x = Math.sin(t * .9) * .06;
-  S1.med.scale.setScalar(L(.86, 1, P(t, 2.2, 3.4, E.out5)));
-  S1.key.position.set(L(-1400, 1000, P(t, 2.3, 4.5, E.io)), 1100, 1500);
   const push = P(t, 4.1, 4.5, E.in3);
-  camera.position.set(0, S1.cy * .4, D0 * L(1, .6, push)); camera.lookAt(0, S1.cy * .4, 0);
+  camera.position.set(0, 0, D0 * L(1, .7, push)); camera.lookAt(0, 0, 0);
   renderer.render(S1.scene, camera);
-  const lo = P(t, 3.0, 3.9, E.io); const lg = $('h-logo'); lg.style.opacity = P(t, 2.95, 3.2) * (1 - push); lg.style.webkitMaskPosition = `${L(100, 0, lo)}% 0`;
-  lg.style.transform = `scale(${L(1.04, 1, lo) * L(1, 1.25, push)})`;
-  rv($('h-sub'), t, 3.5, 4.45, {dy: 12, dz: .3});
+  // crisp original logo appears where the particles settled, then a golden glint passes over it
+  const li = P(t, 2.35, 3.1, E.io);
+  const sc = 1 / L(1, .7, push);
+  const lg = $('h-logo'); lg.style.opacity = (li * (1 - push)).toFixed(3); lg.style.transform = `scale(${sc.toFixed(4)})`; lg.style.transformOrigin = `50% ${(S1.LH / 2 + S1.cy * 0).toFixed(0)}px`;
+  lg.style.filter = `drop-shadow(0 0 ${L(30, 10, li).toFixed(0)}px rgba(236,201,120,${(.55 * li).toFixed(2)}))`;
+  const g = P(t, 2.9, 3.9, E.io); const gl = $('h-glint'); gl.style.opacity = (g > 0 && g < 1 ? 1 : 0) * (1 - push); gl.style.backgroundPosition = `${L(130, -30, g).toFixed(1)}% 0`; gl.style.transform = lg.style.transform; gl.style.transformOrigin = lg.style.transformOrigin;
+  rv($('h-sub'), t, 3.4, 4.45, {dy: 12, dz: .3});
 }
 
 // ================= SCENE 2: slow 3D gallery (4.5 - 11.25) =================
@@ -346,7 +354,7 @@ function renderGB(t) {
   GB.loops.forEach((m, i) => { const s = i ? 1 : -1; m.rotation.z = s * (.45 + un * 1.4); m.position.x = s * (88 + un * 90); m.scale.set(1 - un * .9, (1 - un * .9) * .62, (1 - un * .9) * .7); });
   GB.tails.forEach(m => m.scale.setScalar(1 - un * .95));
   // lid flies up
-  const lift = P(t, to + .1, to + 1.3, x => x * x);
+  const lift = P(t, to + .1, to + 1.3, E.in3 === undefined ? E.io : (x => x * x));
   GB.lid.position.set(lift * 180, 270 + lift * 2300, -lift * 400); GB.lid.rotation.set(-lift * .9, lift * 1.2, lift * .5);
   // inner light
   const open = P(t, to + .05, to + .6, E.out);
@@ -397,7 +405,6 @@ function petalTex() {
 function initS6() {
   S6.scene.background = bgTexture('#2c0c3c', '#12041a', '#050107', .3);
   S6.key = keyLights(S6.scene);
-  S6.med = makeMedallion(); S6.med.position.set(0, 420, 0); S6.scene.add(S6.med);
   S6.bokeh = bokehField(380, [-1400, 1400, -2000, 2000, -3000, 800], 77); S6.scene.add(S6.bokeh);
   const n = 40; S6.petals = new THREE.InstancedMesh(new THREE.PlaneGeometry(46, 68), new THREE.MeshStandardMaterial({map: petalTex(), transparent: true, alphaTest: .05, side: THREE.DoubleSide, roughness: .55}), n);
   S6.petals.frustumCulled = false; S6.scene.add(S6.petals); S6.n = n; S6.dummy = new THREE.Object3D();
@@ -423,8 +430,8 @@ function inkPass(k) {
 
 function renderS6(t) {
   const lt = t - S6.t0;
-  const mi = P(lt, 0, 1.2, E.out5); setOpacity(S6.med, mi);
-  S6.med.rotation.y = L(-Math.PI, 0, mi) + Math.sin(lt * .6) * .3; S6.med.rotation.x = Math.sin(lt * .5) * .07; S6.med.scale.setScalar(L(.55, .7, mi));
+  const mi = P(lt, .1, 1.4, E.out5); st($('f-logo'), {o: mi, y: (1 - mi) * 30, s: L(.94, 1, mi), b: (1 - mi) * 10});
+  const fg = P(t, S6.t0 + 1.3, S6.t0 + 2.4, E.io); $('f-glint').style.opacity = fg > 0 && fg < 1 ? 1 : 0; $('f-glint').style.backgroundPosition = `${L(130, -30, fg).toFixed(1)}% 0`; $('f-glint').style.transform = $('f-logo').style.transform;
   S6.key.position.set(Math.sin(lt * .9) * 1500, 1000, 1400);
   const d = S6.dummy;
   for (let i = 0; i < S6.n; i++) { const sp = 110 + rnd(i + 3) * 120; let y = 1300 + rnd(i + 5) * 2600 - (lt + 1.5) * sp; y = ((y + 1500) % 3000 + 3000) % 3000 - 1500;
@@ -435,14 +442,14 @@ function renderS6(t) {
   camera.position.set(0, 0, D0 * L(1.08, 1, P(lt, 0, 8, E.out))); camera.lookAt(0, 0, 0);
   renderer.render(S6.scene, camera);
   const ctx = S6.ctx; ctx.clearRect(0, 0, W, H);
-  const k = P(t, S6.t0 + .4, S6.t0 + 1.7, E.sine);
+  const k = P(t, S6.t0 + 1.0, S6.t0 + 2.3, E.sine);
   if (k > 0) { const tc = S6.txt.getContext('2d'); tc.clearRect(0, 0, W, H); tc.textAlign = 'center'; tc.textBaseline = 'middle'; S6.draw(tc);
     inkPass(k); const m = S6.tmp.getContext('2d'); m.globalCompositeOperation = 'source-over'; m.clearRect(0, 0, W, H); m.drawImage(S6.txt, 0, 0); m.globalCompositeOperation = 'destination-in'; m.drawImage(S6.mask, 0, 0, W, H); m.globalCompositeOperation = 'source-over'; ctx.drawImage(S6.tmp, 0, 0);
     if (k < 1) { m.clearRect(0, 0, W, H); m.drawImage(S6.edge, 0, 0, W, H); m.globalCompositeOperation = 'destination-in'; m.drawImage(S6.txt, 0, 0); m.globalCompositeOperation = 'source-over'; ctx.globalCompositeOperation = 'lighter'; ctx.filter = 'blur(3px)'; ctx.drawImage(S6.tmp, 0, 0); ctx.filter = 'none'; ctx.drawImage(S6.tmp, 0, 0); ctx.globalCompositeOperation = 'source-over'; } }
   for (const [a, b] of [[25.2, 26.4], [28.2, 29.4]]) { const sh = P(t, a, b, E.io); if (sh > 0 && sh < 1) { ctx.save(); ctx.globalCompositeOperation = 'source-atop'; const x = L(100, 980, sh); const g = ctx.createLinearGradient(x - 120, 0, x + 120, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,250,235,.8)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(0, 900, W, 260); ctx.restore(); } }
-  rv($('f-tag'), t, S6.t0 + 1.6, 999, {dy: 18});
-  rv($('f-btn'), t, S6.t0 + 2.2, 999, {dy: 24, pre: 'translateX(-50%)', s0: .9});
-  rv($('f-ph'), t, S6.t0 + 2.6, 999, {dy: 14});
+  rv($('f-tag'), t, S6.t0 + 2.2, 999, {dy: 18});
+  rv($('f-btn'), t, S6.t0 + 2.8, 999, {dy: 24, pre: 'translateX(-50%)', s0: .9});
+  rv($('f-ph'), t, S6.t0 + 3.2, 999, {dy: 14});
 }
 
 // ================= global =================
@@ -456,7 +463,7 @@ function overlays(t) {
   $('grain').getContext('2d').drawImage(grainTiles[Math.floor(t * FPS) % grainTiles.length], 0, 0);
   let fl = 0;
   for (const c of CUTS) { const d = t - c; if (d > -.25 && d < .6) fl = Math.max(fl, d < 0 ? E.in3((d + .25) / .25) : 1 - E.out(d / .6)); }
-  { const d = t - 2.25; if (d > -.1 && d < .8) fl = Math.max(fl, .8 * (d < 0 ? (d + .1) / .1 : 1 - E.out(d / .8))); }
+  { const d = t - 2.45; if (d > -.1 && d < .9) fl = Math.max(fl, .45 * (d < 0 ? (d + .1) / .1 : 1 - E.out(d / .9))); }
   { const d = t - (GB.tOpen + .05); if (d > -.1 && d < 1.0) fl = Math.max(fl, .75 * (d < 0 ? (d + .1) / .1 : 1 - E.out(d / 1.0))); }
   $('flash').style.opacity = (fl * .85).toFixed(3);
 }

@@ -169,9 +169,9 @@ for j, (tt, m) in enumerate([(22.9, 74), (23.65, 78), (24.4, 81), (25.9, 86), (2
     place(mel, pluck(midi(m), 3.5), tt, .085, .4 + .1 * (j % 3))
 # fx
 place(fx, chime(midi(93)), 0.05, .04, .6)
-place(fx, riser(2.2), 0.05, .10)
-place(fx, impact(), 2.25, .55); place(fx, chime(midi(86)), 2.25, .08, .4); place(fx, chime(midi(93)), 2.3, .05, .6)
-place(fx, chime(midi(90)), 3.1, .04, .5)
+place(fx, riser(2.35), 0.05, .10)
+place(fx, impact(), 2.4, .5); place(fx, chime(midi(86)), 2.4, .08, .4); place(fx, chime(midi(93)), 2.45, .05, .6)
+place(fx, chime(midi(98)), 3.3, .035, .5)
 place(fx, whoosh(1.0), 4.0, .10); place(fx, impact(2.0), 4.5, .28)
 for c in [6.75, 9.0]: place(fx, whoosh(1.0), c - .2, .09, .5 + .2 * np.sin(c))
 place(fx, whoosh(1.0), 10.8, .10); place(fx, impact(2.0), 11.25, .3)
@@ -182,7 +182,7 @@ for j, m in enumerate([86, 90, 93, 98, 102]): place(fx, chime(midi(m)), 14.25 + 
 place(fx, whoosh(1.2), 14.3, .12)
 place(fx, chime(midi(90)), 16.0, .05, .6)
 place(fx, whoosh(1.0), 21.3, .1); place(fx, impact(3.0), 21.75, .45)
-place(fx, chime(midi(86)), 22.2, .07, .4); place(fx, chime(midi(93)), 22.25, .045, .6)
+place(fx, chime(midi(86)), 22.8, .07, .4); place(fx, chime(midi(93)), 22.85, .045, .6); place(fx, chime(midi(98)), 23.1, .03, .5)
 dry = pad + mel + drums * .9 + bass + fx
 send = pad * .5 + mel * .9 + drums * .25 + fx * .5
 wet = np.stack([reverb(send[:, 0], 0), reverb(send[:, 1], 1)], 1)
