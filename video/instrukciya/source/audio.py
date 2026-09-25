@@ -35,7 +35,9 @@ for D, g in [(int(.113 * SR), .5), (int(.171 * SR), .45), (int(.237 * SR), .4)]:
 bed = out / (np.max(np.abs(out)) + 1e-9)
 # level: bed ~ 22 dB under the voice; gentle ducking while speaking
 vrms = np.sqrt(np.mean(voice[voice != 0] ** 2)) if np.any(voice) else .1
-env = np.convolve((np.abs(voice[:, 0]) > .02).astype(float), np.ones(int(.4 * SR)) / int(.4 * SR), 'same')
+_m = (np.abs(voice[:, 0]) > .02).astype(float); _W = int(.4 * SR)
+_c = np.concatenate([[0], np.cumsum(_m)]); _lo = np.clip(np.arange(N) - _W // 2, 0, N); _hi = np.clip(np.arange(N) - _W // 2 + _W, 0, N)
+env = (_c[_hi] - _c[_lo]) / _W   # same as np.convolve(mask, box, 'same'), but O(N)
 bed *= vrms * 10 ** (-19 / 20) / (np.sqrt(np.mean(bed ** 2)) + 1e-9) * (1 - .35 * np.clip(env * 3, 0, 1))
 fade = np.clip(T / 1.5, 0, 1) * np.clip((P['total'] + .5 - T) / 2.0, 0, 1)
 mix = voice + np.stack([bed, bed], 1) * fade[:, None]

@@ -5,13 +5,17 @@ from script_i18n import flow, normalise
 LANG = sys.argv[1]
 FF='/usr/local/lib/python3.11/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2'
 ENG = os.environ.get('KKTTS', 'edge') if LANG == 'kk' else 'kokoro'
-VD = f'voice_{LANG}' + ('_edge' if ENG == 'edge' else '')
+VD = f'voice_{LANG}' + ({'edge': '_edge', 'yandex': '_ya'}.get(ENG, ''))
 os.makedirs(VD, exist_ok=True)
 if LANG == 'en':
     import soundfile as sf
     from kokoro_onnx import Kokoro
     K = Kokoro('../tts/kokoro-v1.0.onnx', '../tts/voices-v1.0.bin')
     def synth(text, fn): s, sr = K.create(text, voice='af_heart', speed=1.02, lang='en-us'); sf.write(fn, s, sr)
+elif ENG == 'yandex':   # Yandex SpeechKit v3, voice Amira
+    import ya_tts
+    YSPEED = float(os.environ.get('YASPEED', '1.3')); YVOICE = os.environ.get('YAVOICE', 'amira')
+    def synth(text, fn): ya_tts.synth(text, YVOICE, fn, speed=YSPEED, host='https://tts.api.yandexcloud.kz')
 elif ENG == 'edge':   # Microsoft neural voice kk-KZ-AigulNeural
     import asyncio, edge_say
     RATE = os.environ.get('KKRATE', '+0%')
