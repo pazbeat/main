@@ -1,7 +1,8 @@
 import json, sys, wave, numpy as np
 sys.path.insert(0, '..')
-DEV = sys.argv[1]; SR = 48000
-P = json.load(open(f'plan2_{DEV}.json')); N = int((P['total'] + 0.5) * SR)
+DEV = sys.argv[1]; SR = 48000; LANG = sys.argv[2] if len(sys.argv) > 2 else 'ru'
+SUF = DEV if LANG == 'ru' else f'{LANG}_{DEV}'
+P = json.load(open(f'plan2_{DEV}.json' if LANG == 'ru' else f'plan3_{SUF}.json')); N = int((P['total'] + 0.5) * SR)
 def readwav(fn):
     with wave.open(fn) as w:
         a = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).reshape(-1, w.getnchannels()) / 32768.0
@@ -39,6 +40,6 @@ bed *= vrms * 10 ** (-19 / 20) / (np.sqrt(np.mean(bed ** 2)) + 1e-9) * (1 - .35 
 fade = np.clip(T / 1.5, 0, 1) * np.clip((P['total'] + .5 - T) / 2.0, 0, 1)
 mix = voice + np.stack([bed, bed], 1) * fade[:, None]
 mix /= max(1, np.max(np.abs(mix)) / .95)
-with wave.open(f'audio_{DEV}.wav', 'wb') as w:
+with wave.open(f'audio_{SUF}.wav', 'wb') as w:
     w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes((mix * 32767).astype(np.int16).tobytes())
 print('ok', DEV)

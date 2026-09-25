@@ -1,12 +1,13 @@
 import json, sys
-DEV = sys.argv[1]; FPS = 30
-L = json.load(open('lines.json'))[DEV]
-M = json.load(open(f'rec2_{DEV}/meta.json'))
+DEV = sys.argv[1]; FPS = 30; LANG = sys.argv[2] if len(sys.argv) > 2 else 'ru'
+REC = f'rec2_{DEV}' if LANG == 'ru' else f'rec3_{LANG}_{DEV}'
+L = json.load(open('lines.json' if LANG == 'ru' else f'lines_{LANG}.json'))[DEV]
+M = json.load(open(f'{REC}/meta.json'))
 VW, VH = M['viewport']['width'], M['viewport']['height']
 MAXZ = 1.32 if DEV == 'pc' else 1.0
-NF = len(M['frames']); fpath = lambda i: f"rec2_{DEV}/f/{min(max(i, 0), NF - 1):06d}.jpg"
+NF = len(M['frames']); fpath = lambda i: f"{REC}/f/{min(max(i, 0), NF - 1):06d}.jpg"
 rl = {x['id']: x for x in M['lines']}
-DIFF = json.load(open(f'rec2_{DEV}/diffs.json'))
+DIFF = json.load(open(f'{REC}/diffs.json'))
 
 # ---- timeline ----
 tl = []; T = 0.0; prev_sid = None
@@ -56,7 +57,7 @@ for f, fr in enumerate(M['frames']):
     for e in fr['fx']: ev.append((f, e))
 
 # hard cuts inside the recording (page load, modal closing): hold the outgoing frame, then crossfade
-J = [j for j, d in json.load(open(f'rec2_{DEV}/jumps.json')) if d > 40]
+J = [j for j, d in json.load(open(f'{REC}/jumps.json')) if d > 40]
 groups = []
 for j in J:
     if groups and j - groups[-1][1] <= 6: groups[-1][1] = j
@@ -85,7 +86,7 @@ for fi in range(int(TOTAL * FPS)):
     fr = {'t': round(t, 3), 'sid': it['sid'], 'kind': it['kind'], 'step': it['step']}
     if it['kind'] == 's':
         f = it['f0'] + max(0, round((t - it['voice']) * FPS)) if t >= it['voice'] else it['f0']
-        f = min(f, it['f1']); fr.update(rec_state(f)); fr['url'] = 'imbir.kz/ru' if f < nav + 10 else 'imbir.kz/ru/create'
+        f = min(f, it['f1']); fr.update(rec_state(f)); fr['url'] = f'imbir.kz/{LANG}' if f < nav + 10 else f'imbir.kz/{LANG}/create'
     # crossfade with the previous scene of a different kind
     k = tl.index(it)
     if k > 0 and tl[k - 1]['kind'] != it['kind'] and t - it['start'] < XF:
@@ -99,5 +100,5 @@ for fi in range(int(TOTAL * FPS)):
     else: fr['cap'] = ''; fr['ca'] = 0
     frames.append(fr)
 
-json.dump({'dev': DEV, 'fps': FPS, 'vw': VW, 'vh': VH, 'total': TOTAL, 'lines': tl, 'frames': frames}, open(f'plan2_{DEV}.json', 'w'), ensure_ascii=False)
+json.dump({'dev': DEV, 'fps': FPS, 'vw': VW, 'vh': VH, 'total': TOTAL, 'lines': tl, 'frames': frames}, open(f'plan2_{DEV}.json' if LANG == 'ru' else f'plan3_{LANG}_{DEV}.json', 'w'), ensure_ascii=False)
 print(DEV, 'duration', round(TOTAL, 1), 'rec frames', NF)

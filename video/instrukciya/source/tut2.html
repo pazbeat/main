@@ -27,7 +27,7 @@ html,body{overflow:hidden;background:#000}
 .ripple{position:absolute;border-radius:50%;border:3px solid #d9a93c;background:rgba(236,201,120,.25);z-index:4;pointer-events:none}
 .finger{position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:rgba(255,255,255,.55);border:3px solid rgba(182,146,68,.9);z-index:5;box-shadow:0 4px 18px rgba(0,0,0,.35)}
 .ring{position:absolute;border:4px solid #d9a93c;border-radius:14px;z-index:4;box-shadow:0 0 0 6px rgba(236,201,120,.25)}
-#badge{position:absolute;z-index:6;display:flex;align-items:center;gap:14px;background:#2b0b3d;color:#fff;border-radius:999px;padding:10px 24px 10px 12px;font-weight:600;letter-spacing:.02em;box-shadow:0 10px 30px rgba(43,11,61,.35)}
+#badge{position:absolute;z-index:6;white-space:nowrap;display:flex;align-items:center;gap:14px;background:#2b0b3d;color:#fff;border-radius:999px;padding:10px 24px 10px 12px;font-weight:600;letter-spacing:.02em;box-shadow:0 10px 30px rgba(43,11,61,.35)}
 #badge .n{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#e4c47c,#b69244);color:#2b0b3d;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:24px;font-weight:700}
 .pc #badge{right:24px;top:8px;font-size:18px;padding:6px 22px 6px 8px}
 .pc #badge .n{width:32px;height:32px;font-size:22px}
@@ -86,7 +86,37 @@ html,body{overflow:hidden;background:#000}
 </div>
 
 <script>
-const Q = new URLSearchParams(location.search); const DEV = Q.get('dev') || 'pc'; const PC = DEV === 'pc';
+const Q = new URLSearchParams(location.search); const DEV = Q.get('dev') || 'pc'; const PC = DEV === 'pc'; const LANG = Q.get('lang') || 'ru';
+const TXT = {
+  ru: {steps: {1: 'Дизайн', 2: 'Подарок', 3: 'Подпись', 4: PC ? 'Филиал' : 'Салон', 5: 'Отправка', 6: 'Оплата'}, badge: (n, s) => `Шаг ${n} из 6 · ${s}`,
+    inE: 'Видеоинструкция', inH: 'Как купить<br><i>подарочный сертификат</i>', inC: `на сайте imbir.kz · ${PC ? 'с компьютера' : 'с телефона'}`,
+    afE: 'После оплаты', afH: 'Сертификат<br><i>придёт на почту</i>', mail1: 'Входящие · сейчас', mail2: 'Вам подарок — сертификат Imbir Thai Spa', mail3: 'PDF с QR‑кодом · действует 3 месяца',
+    check: 'imbir.kz → «Проверить» — статус и баланс сертификата', tmH: 'Важные <i>условия</i>',
+    ouH: `Дарите тепло Таиланда — <i>${PC ? '' : '<br>'}себе или в подарок</i>`, ouP: '9 салонов · 7 городов · ежедневно 10:00–22:00',
+    terms: [['Действует 3 месяца с даты покупки', 'дата окончания указана на сертификате'], ['Во всех салонах сети «Имбирь»', 'кроме салона Imbir Platinum'],
+      ['Запись заранее — по телефону или WhatsApp салона', 'номера всех салонов: imbir.kz → «Салоны»'], ['Приходите за 10–15 минут до начала', ''],
+      ['Покажите сертификат администратору', 'на экране телефона или распечатанным'], ['Дороже номинала — доплата на месте', 'дешевле — остаток останется на балансе'],
+      ['Отмена записи — не позднее чем за 3 часа', 'иначе услуга спишется с сертификата'], ['Сертификат не обменивается на деньги', '']]},
+  en: {steps: {1: 'Design', 2: 'Gift', 3: PC ? 'Message' : 'Recipient', 4: 'Salon', 5: 'Delivery', 6: 'Payment'}, badge: (n, s) => `Step ${n} of 6 · ${s}`,
+    inE: 'Video guide', inH: 'How to buy<br><i>a gift certificate</i>', inC: `on imbir.kz · ${PC ? 'from a computer' : 'from a phone'}`,
+    afE: 'After payment', afH: 'The certificate<br><i>arrives by email</i>', mail1: 'Inbox · now', mail2: 'A gift for you — Imbir Thai Spa certificate', mail3: 'PDF with a QR code · valid for 3 months',
+    check: 'imbir.kz/en/check — certificate status and balance', tmH: 'Important <i>terms</i>',
+    ouH: `Give the warmth of Thailand — <i>${PC ? '' : '<br>'}to yourself or as a gift</i>`, ouP: '9 salons · 7 cities · daily 10:00–22:00', ouF: PC ? 84 : 72,
+    terms: [['Valid for 3 months from the date of purchase', 'the expiry date is printed on the certificate'], ['Accepted at all Imbir salons', 'except Imbir Platinum'],
+      ['Book in advance — by phone or the salon’s WhatsApp', 'all salon numbers: imbir.kz → “Salons”'], ['Arrive 10–15 minutes before the start', ''],
+      ['Show the certificate to the administrator', 'on your phone screen or printed'], ['Program costs more — pay the difference', 'costs less — the rest stays on the balance'],
+      ['Cancel at least 3 hours in advance', 'otherwise the service is written off'], ['The certificate cannot be exchanged for cash', '']]},
+  kk: {steps: {1: 'Дизайн', 2: 'Сыйлық', 3: PC ? 'Арнау жазуы' : 'Кімге', 4: PC ? 'Филиал' : 'Салон', 5: 'Жіберу', 6: 'Төлем'}, badge: (n, s) => `${n}-қадам, барлығы 6 · ${s}`,
+    inE: 'Бейненұсқаулық', inH: 'Сыйлық сертификатын<br><i>қалай сатып алуға болады</i>', inC: `imbir.kz сайтында · ${PC ? 'компьютерден' : 'телефоннан'}`,
+    afE: 'Төлемнен кейін', afH: 'Сертификат<br><i>поштаға келеді</i>', mail1: 'Кіріс · қазір', mail2: 'Сізге сыйлық — Imbir Thai Spa сертификаты', mail3: 'QR‑коды бар PDF · 3 ай жарамды',
+    check: 'imbir.kz/kk/check — сертификаттың күйі мен балансы', tmH: 'Маңызды <i>шарттар</i>',
+    ouH: `Таиланд жылуын сыйлаңыз — <i>${PC ? '' : '<br>'}өзіңізге немесе сыйға</i>`, ouP: '9 салон · 7 қала · күн сайын 10:00–22:00', ouF: PC ? 80 : 76,
+    terms: [['Сатып алған күннен бастап 3 ай жарамды', 'аяқталу күні сертификатта көрсетілген'], ['«Imbir» желісінің барлық салондарында', 'Imbir Platinum салонынан басқа'],
+      ['Алдын ала жазылыңыз — телефонмен немесе WhatsApp арқылы', 'барлық салон нөмірлері: imbir.kz → «Салондар»'], ['Басталардан 10–15 минут бұрын келіңіз', ''],
+      ['Сертификатты әкімшіге көрсетіңіз', 'телефон экранында немесе басып шығарып'], ['Бағдарлама қымбат болса — айырмасын төлейсіз', 'арзан болса — қалдығы балансқа сақталады'],
+      ['Кемінде 3 сағат бұрын бас тартыңыз', 'әйтпесе қызмет есептен шығарылады'], ['Сертификат ақшаға айырбасталмайды', '']]},
+};
+const X = TXT[LANG]; document.documentElement.lang = LANG; const SFX = LANG === 'ru' ? '' : '_' + LANG;
 document.documentElement.className = DEV;
 if (!PC) { document.getElementById('bar').style.display = 'none'; } else { document.getElementById('phone').style.display = 'none'; }
 const $ = id => document.getElementById(id);
@@ -96,8 +126,7 @@ const P = (t, a, b, e = E.out) => e(cl((t - a) / (b - a)));
 function rv(el, t, a, {d = .7, dy = 30, dx = 0, blur = 10, z = 1e9} = {}) { const i = P(t, a, a + d, E.out5), o = 1 - P(t, z - .4, z, E.io);
   el.style.opacity = (i * o).toFixed(3); el.style.transform = `translate(${((1 - i) * dx).toFixed(1)}px,${((1 - i) * dy).toFixed(1)}px)`; const b = (1 - i) * blur + (1 - o) * 8; el.style.filter = b > .1 ? `blur(${b.toFixed(1)}px)` : 'none'; }
 let PLAN, LN = {}, VW, VH, S0;
-const STEPS = {1: 'Дизайн', 2: 'Подарок', 3: 'Подпись', 4: 'Филиал', 5: 'Отправка', 6: 'Оплата'};
-if (!PC) STEPS[4] = 'Салон';
+const STEPS = X.steps;
 const W = PC ? 1920 : 1080, H = PC ? 1080 : 1920;
 
 // ---------- icons ----------
@@ -111,50 +140,41 @@ const ICON = {
   cancel: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M10 13l4 4M14 13l-4 4"/></svg>',
   cash: '<svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M3 21L21 3"/></svg>',
 };
-const TERMS = [
-  ['t1', 'cal', 'Действует 3 месяца с даты покупки', 'дата окончания указана на сертификате'],
-  ['t2', 'pin', 'Во всех салонах сети «Имбирь»', 'кроме салона Imbir Platinum'],
-  ['t3', 'phone', 'Запись заранее — по телефону или WhatsApp салона', 'номера всех салонов: imbir.kz → «Салоны»'],
-  ['t4', 'clock', 'Приходите за 10–15 минут до начала', ''],
-  ['t5', 'show', 'Покажите сертификат администратору', 'на экране телефона или распечатанным'],
-  ['t6', 'wallet', 'Дороже номинала — доплата на месте', 'дешевле — остаток останется на балансе'],
-  ['t7', 'cancel', 'Отмена записи — не позднее чем за 3 часа', 'иначе услуга спишется с сертификата'],
-  ['t8', 'cash', 'Сертификат не обменивается на деньги', ''],
-];
+const TERMS = ['t1','t2','t3','t4','t5','t6','t7','t8'].map((id, k) => [id, ['cal','pin','phone','clock','show','wallet','cancel','cash'][k], ...X.terms[k]]);
 
 function buildGraphics() {
   const G = (id, html) => { $(id).innerHTML = html; };
   const logoW = PC ? 620 : 700;
   G('Gintro', `
     <img class="logo" id="in-logo" src="../a/logo-white.png" style="width:${logoW}px;${PC ? 'left:160px;top:230px' : 'left:190px;top:420px'}">
-    <div class="abs eyebrow" id="in-e" style="${PC ? 'left:166px;top:470px;font-size:20px' : 'left:0;right:0;text-align:center;top:680px;font-size:24px'}">Видеоинструкция</div>
-    <div class="abs h" id="in-h" style="${PC ? 'left:160px;top:510px;font-size:88px;width:900px' : 'left:0;right:0;text-align:center;top:740px;font-size:96px'}">Как купить<br><i>подарочный сертификат</i></div>
-    <div class="abs" id="in-c" style="${PC ? 'left:166px;top:830px' : 'left:0;right:0;text-align:center;top:990px'}"><span class="pill" style="font-size:${PC ? 20 : 26}px;padding:${PC ? '16px 34px' : '20px 40px'}">на сайте imbir.kz · ${PC ? 'с компьютера' : 'с телефона'}</span></div>
+    <div class="abs eyebrow" id="in-e" style="${PC ? 'left:166px;top:470px;font-size:20px' : 'left:0;right:0;text-align:center;top:680px;font-size:24px'}">${X.inE}</div>
+    <div class="abs h" id="in-h" style="${PC ? 'left:160px;top:510px;font-size:88px;width:900px' : 'left:0;right:0;text-align:center;top:740px;font-size:96px'}">${X.inH}</div>
+    <div class="abs" id="in-c" style="${PC ? 'left:166px;top:830px' : 'left:0;right:0;text-align:center;top:990px'}"><span class="pill" style="font-size:${PC ? 20 : 26}px;padding:${PC ? '16px 34px' : '20px 40px'}">${X.inC}</span></div>
     <div class="abs" id="in-dev" style="${PC ? 'left:1080px;top:190px;width:700px;height:420px;perspective:1400px' : 'left:320px;top:1150px;width:440px;height:900px;perspective:1400px'}">
       <div id="in-devc" style="position:absolute;inset:0;border-radius:${PC ? 16 : 56}px;overflow:hidden;background:#fff;box-shadow:0 40px 120px rgba(0,0,0,.55),0 0 0 ${PC ? 1 : 10}px ${PC ? 'rgba(255,255,255,.15)' : '#0d0310'};transform-origin:50% 50%">
         ${PC ? '<div style="height:28px;background:#f3edf6;display:flex;align-items:center;gap:6px;padding-left:12px"><i style="width:9px;height:9px;border-radius:50%;background:#e7a6a6"></i><i style="width:9px;height:9px;border-radius:50%;background:#ecd39a"></i><i style="width:9px;height:9px;border-radius:50%;background:#b9ddb9"></i></div>' : ''}
         <img id="in-shot" style="width:100%;display:block"></div></div>`);
   G('Gafter', `
-    <div class="abs eyebrow" id="af-e" style="${PC ? 'left:150px;top:250px;font-size:20px' : 'left:0;right:0;text-align:center;top:420px;font-size:24px'}">После оплаты</div>
-    <div class="abs h" id="af-h" style="${PC ? 'left:150px;top:300px;font-size:92px;width:760px' : 'left:0;right:0;text-align:center;top:480px;font-size:92px'}">Сертификат<br><i>придёт на почту</i></div>
+    <div class="abs eyebrow" id="af-e" style="${PC ? 'left:150px;top:250px;font-size:20px' : 'left:0;right:0;text-align:center;top:420px;font-size:24px'}">${X.afE}</div>
+    <div class="abs h" id="af-h" style="${PC ? 'left:150px;top:300px;font-size:92px;width:760px' : 'left:0;right:0;text-align:center;top:480px;font-size:92px'}">${X.afH}</div>
     <div class="abs" id="af-mail" style="${PC ? 'left:150px;top:560px;width:640px' : 'left:90px;top:760px;width:900px'};background:rgba(255,255,255,.96);color:#2b1734;border-radius:22px;padding:${PC ? '22px 26px' : '28px 32px'};display:flex;gap:20px;align-items:center;box-shadow:0 30px 80px rgba(0,0,0,.45)">
       <div style="flex:none;width:${PC ? 64 : 80}px;height:${PC ? 64 : 80}px;border-radius:16px;background:linear-gradient(135deg,#4d295d,#2b0b3d);display:flex;align-items:center;justify-content:center"><img src="../a/icon-gold.png" style="height:${PC ? 40 : 50}px"></div>
-      <div><div style="font-size:${PC ? 15 : 20}px;font-weight:600;letter-spacing:.06em;color:#8a8091;text-transform:uppercase">Входящие · сейчас</div>
-      <div style="font-size:${PC ? 23 : 30}px;font-weight:600;margin-top:4px">Вам подарок — сертификат Imbir Thai Spa</div>
-      <div style="font-size:${PC ? 17 : 23}px;color:#6f6477;margin-top:4px">PDF с QR‑кодом · действует 3 месяца</div></div></div>
-    <div class="card" id="af-cert" style="${PC ? 'left:1020px;top:170px;width:620px' : 'left:190px;top:1020px;width:700px'};background:transparent;box-shadow:none;border-radius:0;overflow:visible"><img src="order_cert.png" style="width:100%;display:block;filter:drop-shadow(0 30px 60px rgba(0,0,0,.5))"></div>
-    <div class="card" id="af-check" style="${PC ? 'left:880px;top:250px;width:880px' : 'left:90px;top:820px;width:900px'}"><img src="check_page.jpg" style="width:100%;display:block"></div>
-    <div class="abs" id="af-cl" style="${PC ? 'left:880px;top:740px;font-size:24px' : 'left:0;right:0;text-align:center;top:1430px;font-size:30px'};color:rgba(255,255,255,.85)">imbir.kz → «Проверить» — статус и баланс сертификата</div>`);
+      <div><div style="font-size:${PC ? 15 : 20}px;font-weight:600;letter-spacing:.06em;color:#8a8091;text-transform:uppercase">${X.mail1}</div>
+      <div style="font-size:${PC ? 23 : 30}px;font-weight:600;margin-top:4px">${X.mail2}</div>
+      <div style="font-size:${PC ? 17 : 23}px;color:#6f6477;margin-top:4px">${X.mail3}</div></div></div>
+    <div class="card" id="af-cert" style="${PC ? 'left:1020px;top:170px;width:620px' : 'left:190px;top:1020px;width:700px'};background:transparent;box-shadow:none;border-radius:0;overflow:visible"><img src="order_cert${SFX}.png" style="width:100%;display:block;filter:drop-shadow(0 30px 60px rgba(0,0,0,.5))"></div>
+    <div class="card" id="af-check" style="${PC ? 'left:880px;top:250px;width:880px' : 'left:90px;top:820px;width:900px'}"><img src="check_page${SFX}.jpg" style="width:100%;display:block"></div>
+    <div class="abs" id="af-cl" style="${PC ? 'left:880px;top:740px;font-size:24px' : 'left:0;right:0;text-align:center;top:1430px;font-size:30px'};color:rgba(255,255,255,.85)">${X.check}</div>`);
   const t0 = PC ? 250 : 520, dy = PC ? 170 : 290;
   G('Gterms', `
     <div class="abs eyebrow" id="tm-e" style="${PC ? 'left:170px;top:90px;font-size:20px' : 'left:0;right:0;text-align:center;top:360px;font-size:24px'}">Imbir Thai Spa</div>
-    <div class="abs h" id="tm-h" style="${PC ? 'left:166px;top:130px;font-size:80px' : 'left:0;right:0;text-align:center;top:410px;font-size:96px'}">Важные <i>условия</i></div>
+    <div class="abs h" id="tm-h" style="${PC ? 'left:166px;top:130px;font-size:80px' : 'left:0;right:0;text-align:center;top:410px;font-size:96px'}">${X.tmH}</div>
     ${TERMS.map(([id, ic, a, b], k) => `<div class="term" id="tm-${id}" style="top:${t0 + (k % 4) * dy}px"><div class="ic">${ICON[ic]}</div><div class="tx">${a}${b ? `<small>${b}</small>` : ''}</div></div>`).join('')}`);
   G('Goutro', `
     <img class="logo" id="ou-logo" src="../a/logo-white.png" style="width:${PC ? 760 : 760}px;left:${PC ? 580 : 160}px;top:${PC ? 190 : 520}px">
-    <div class="abs h" id="ou-h" style="left:0;right:0;text-align:center;top:${PC ? 470 : 820}px;font-size:${PC ? 84 : 88}px">Дарите тепло Таиланда — <i>${PC ? '' : '<br>'}себе или в подарок</i></div>
+    <div class="abs h" id="ou-h" style="left:0;right:0;text-align:center;top:${PC ? 470 : 820}px;font-size:${X.ouF || (PC ? 84 : 88)}px">${X.ouH}</div>
     <div class="abs" id="ou-u" style="left:0;right:0;text-align:center;top:${PC ? 640 : 1100}px"><span class="pill" style="font-size:${PC ? 26 : 34}px;padding:${PC ? '22px 54px' : '28px 64px'}">imbir.kz</span></div>
-    <div class="abs" id="ou-p" style="left:0;right:0;text-align:center;top:${PC ? 790 : 1290}px;font-size:${PC ? 28 : 36}px;color:rgba(255,255,255,.85);line-height:1.6">+7 708 111 8098<br><span style="font-size:${PC ? 22 : 28}px;color:rgba(255,255,255,.6)">9 салонов · 7 городов · ежедневно 10:00–22:00</span></div>`);
+    <div class="abs" id="ou-p" style="left:0;right:0;text-align:center;top:${PC ? 790 : 1290}px;font-size:${PC ? 28 : 36}px;color:rgba(255,255,255,.85);line-height:1.6">+7 708 111 8098<br><span style="font-size:${PC ? 22 : 28}px;color:rgba(255,255,255,.6)">${X.ouP}</span></div>`);
 }
 
 const imgCache = new Map();
@@ -176,8 +196,8 @@ function renderScreen(F, step) {
   for (const [x, y, w, h, age] of F.rings) { const pulse = .5 + .5 * Math.sin(age * 5); const o = cl(age / .35) * (1 - cl((age - 2.2) / .4)); const pad = 8 / s;
     fx += `<div class="ring" style="left:${x - pad}px;top:${y - pad}px;width:${w + 2 * pad}px;height:${h + 2 * pad}px;border-width:${(3 + pulse * 1.5) / s}px;border-radius:${14 / s}px;opacity:${o.toFixed(2)}"></div>`; }
   $('fx').innerHTML = fx;
-  $('urltx').innerHTML = F.url === 'imbir.kz/ru' ? '<b>imbir.kz</b>/ru' : '<b>imbir.kz</b>/ru/create';
-  const bd = $('badge'); if (step) { bd.style.display = 'flex'; $('bn').textContent = step; $('bt').textContent = `Шаг ${step} из 6 · ${STEPS[step]}`; } else bd.style.display = 'none';
+  $('urltx').innerHTML = '<b>imbir.kz</b>' + (F.url || 'imbir.kz/' + LANG).slice(8);
+  const bd = $('badge'); if (step) { bd.style.display = 'flex'; $('bn').textContent = step; $('bt').textContent = X.badge(step, STEPS[step]); } else bd.style.display = 'none';
   const j2 = F.bimg ? setImg($('shot2'), F.bimg) : Promise.resolve(); $('shot2').style.opacity = F.bimg ? F.ba : 0;
   return Promise.all([setImg($('shot'), F.img), j2]);
 }
@@ -226,11 +246,11 @@ async function seek(fi) {
 }
 window.seek = seek;
 window.ready = (async () => {
-  PLAN = await (await fetch(`plan2_${DEV}.json`)).json();
+  PLAN = await (await fetch(Q.get('plan') || (LANG === 'ru' ? `plan2_${DEV}.json` : `plan3_${LANG}_${DEV}.json`))).json();
   PLAN.lines.forEach(l => LN[l.id] = l); VW = PLAN.vw; VH = PLAN.vh; S0 = PC ? 1920 / VW : 682 / VW;
   buildGraphics();
   const first = PLAN.frames.find(f => f.kind === 's'); $('in-shot').src = first.img;
-  await Promise.all(['400', '500', '600'].flatMap(w => [`${w} 40px "Cormorant Garamond"`, `italic ${w} 40px "Cormorant Garamond"`, `${w} 20px Montserrat`]).map(f => document.fonts.load(f, 'Таиланд abc ₸')));
+  await Promise.all(['400', '500', '600'].flatMap(w => [`${w} 40px "Cormorant Garamond"`, `italic ${w} 40px "Cormorant Garamond"`, `${w} 20px Montserrat`]).map(f => document.fonts.load(f, 'Таиланд abc ₸ әғқңөұүһі')));
   await document.fonts.ready; await Promise.all([...document.images].map(i => i.decode().catch(() => {})));
   return PLAN.frames.length;
 })();
