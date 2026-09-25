@@ -59,10 +59,10 @@ canvas.full{position:absolute;left:0;top:0;width:1920px;height:1080px}
 /* E cards */
 #E{background:radial-gradient(1100px 800px at 50% 40%,#3a1250 0%,#1a0624 55%,#08020b 100%)}
 #deck{position:absolute;inset:0;perspective:1700px;perspective-origin:50% 45%}
-.card3{position:absolute;left:50%;top:50%;width:640px;height:417px;margin:-208px 0 0 -320px;transform-style:preserve-3d;border-radius:22px}
-.card3 .face{position:absolute;inset:0;border-radius:22px;overflow:hidden;backface-visibility:hidden;box-shadow:0 40px 90px rgba(0,0,0,.55)}
+.card3{position:absolute;left:50%;top:50%;width:500px;height:448px;margin:-224px 0 0 -250px;transform-style:preserve-3d;border-radius:10px}
+.card3 .face{position:absolute;inset:0;border-radius:10px;overflow:hidden;backface-visibility:hidden;box-shadow:0 40px 90px rgba(0,0,0,.55)}
 .card3 .face img{width:100%;height:100%;object-fit:cover;display:block}
-.card3 .sheen{position:absolute;inset:0;border-radius:22px;background:linear-gradient(115deg,rgba(255,255,255,0) 30%,rgba(255,248,225,.55) 48%,rgba(255,255,255,0) 62%);background-size:300% 100%;mix-blend-mode:overlay;pointer-events:none}
+.card3 .sheen{position:absolute;inset:0;border-radius:10px;background:linear-gradient(115deg,rgba(255,255,255,0) 30%,rgba(255,248,225,.55) 48%,rgba(255,255,255,0) 62%);background-size:300% 100%;mix-blend-mode:overlay;pointer-events:none}
 .card3 .back{transform:rotateY(180deg);background:linear-gradient(135deg,#4d295d,#2b0b3d)}
 #hero .face.front{background:radial-gradient(700px 400px at 20% 0%,#6e2f92 0%,#3b1152 45%,#1f0730 100%)}
 .hf{position:absolute}
@@ -425,26 +425,19 @@ function renderD(t) {
 }
 
 // ============ E: 3D certificates ============
-const DESIGNS = ['a/d_2a6ec6fd-9c72-4c69-b2b8-4e86ab1f81f4.webp', 'a/d_bb3f42fe-f0ad-4eda-aa19-a3a523419801.webp', 'a/d_4f36d759-47c3-4eeb-a1eb-ac3344de49db.webp'];
+const DESIGNS = ['a/cert_1.png', 'a/cert_2.png', 'a/cert_3.png'];
 function initE() {
   const deck = $('deck');
   const mk = (id, front) => { const c = document.createElement('div'); c.className = 'card3'; c.id = id; c.innerHTML = `<div class="face front">${front}</div><div class="face back"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><img src="a/icon-gold.png" style="height:150px;width:auto"></div></div><div class="sheen"></div>`; deck.appendChild(c); return c; };
   DESIGNS.forEach((d, i) => mk('cd' + i, `<img src="${d}">`));
-  mk('hero', `<div class="bd"></div><div class="bd2"></div>
-    <img class="hf" src="a/logo-white.png" style="left:48px;top:44px;height:62px;width:auto">
-    <div class="hf eyebrow" style="right:48px;top:62px;font-size:12px;letter-spacing:.34em">Подарочный сертификат</div>
-    <div class="hf serif" style="left:48px;top:150px;font-size:86px;line-height:1;font-weight:500">Ты и Я</div>
-    <div class="hf" style="left:50px;top:246px;font-size:15px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.72)">SPA для пар · 2,5 часа</div>
-    <div class="hf serif foil" style="left:48px;top:292px;font-size:66px;font-weight:600;line-height:1">70 000 ₸</div>
-    <div class="hf" style="left:50px;top:372px;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:rgba(236,201,120,.85)">imbir.kz · действует 3 месяца</div>
-    <img class="hf" src="a/qr.svg" style="right:48px;bottom:44px;width:128px;height:128px">`);
+  mk('hero', `<img src="a/cert_0.png">`);
 }
 function card(el, {x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, s = 1, o = 1}) {
   el.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,${z.toFixed(1)}px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) rotateZ(${rz.toFixed(2)}deg) scale(${s.toFixed(4)})`;
   el.style.opacity = o.toFixed(3);
   el.lastChild.style.backgroundPosition = `${(L(120, -20, cl(.5 + ry / 90 + rz / 60))).toFixed(1)}% 0`;
 }
-const FAN = [{x: -500, y: 70, rz: -16, ry: 14}, {x: -170, y: 10, rz: -5, ry: 5}, {x: 170, y: 10, rz: 5, ry: -5}, {x: 500, y: 70, rz: 16, ry: -14}];
+const FAN = [{x: -480, y: 70, rz: -15, ry: 14}, {x: -165, y: 10, rz: -5, ry: 5}, {x: 165, y: 10, rz: 5, ry: -5}, {x: 480, y: 70, rz: 15, ry: -14}];
 function renderE(t) {
   const ids = ['cd0', 'cd1', 'hero', 'cd2'];
   rv($('e-title'), t, 35.4, 39.6, {dy: 14});
@@ -455,7 +448,7 @@ function renderE(t) {
     let st3 = {x: L(f.x * .2, f.x, k), y: L(500, f.y, k) + flo, z: L(-1800, i * 6, k), rx: L(40, 0, k), ry: L(f.ry + 200 * (i % 2 ? 1 : -1), f.ry, k), rz: L(0, f.rz, k), s: .92, o: P(t, a, a + .4)};
     if (id === 'hero') {
       const m = P(t, 39.4, 40.9, E.io);
-      st3 = {x: L(st3.x, 420, m), y: L(st3.y, 10 + Math.sin((t - 35) * 1.1) * 12, m), z: L(st3.z, 160, m), rx: L(st3.rx, 6 + Math.sin(t * .9) * 3, m), ry: L(st3.ry, -16 + Math.sin(t * .7) * 7, m), rz: L(st3.rz, -3, m), s: L(.92, 1.08, m), o: st3.o};
+      st3 = {x: L(st3.x, 390, m), y: L(st3.y, 10 + Math.sin((t - 35) * 1.1) * 12, m), z: L(st3.z, 160, m), rx: L(st3.rx, 6 + Math.sin(t * .9) * 3, m), ry: L(st3.ry, -16 + Math.sin(t * .7) * 7, m), rz: L(st3.rz, -3, m), s: L(.92, 1.08, m), o: st3.o};
       const fly = P(t, 44.3, 45.0, E.in3); st3.z += fly * 1300; st3.x = L(st3.x, 0, fly); st3.rx = L(st3.rx, 0, fly); st3.ry = L(st3.ry, 0, fly);
     } else {
       const d = P(t, 39.2 + i * .08, 40.3 + i * .08, E.in3);

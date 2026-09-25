@@ -57,7 +57,7 @@ canvas.full{position:absolute;left:0;top:0;width:1080px;height:1920px}
     <div class="abs eyebrow center" id="c-eye" style="top:300px">Подарочный сертификат</div>
     <div class="word center" id="c-h1" style="top:360px;font-size:128px;font-weight:500">Подарите</div>
     <div class="word center foil" id="c-h2" style="top:490px;font-size:128px;font-style:italic">тепло Таиланда</div>
-    <div class="abs center" id="c-chips" style="top:1300px;padding:0 60px">
+    <div class="abs center" id="c-chips" style="top:1450px;padding:0 60px">
       <span class="chip">⏱ за 2 минуты</span><span class="chip">PDF с QR на email</span><span class="chip">во всех салонах сети</span>
     </div>
   </div>
@@ -360,54 +360,48 @@ async function renderS3(t) {
 
 // ================= SCENE 4: 3D certificate =================
 const S4 = {scene: new THREE.Scene(), t0: 13.75};
-async function certTextures() {
-  const Wc = 1800, Hc = 1172;
-  const c = document.createElement('canvas'); c.width = Wc; c.height = Hc; const x = c.getContext('2d');
-  const m = document.createElement('canvas'); m.width = Wc; m.height = Hc; const mx = m.getContext('2d'); // metalness (B) & roughness (G)
-  const g = x.createRadialGradient(Wc * .2, 0, 0, Wc * .2, 0, Wc * 1.1); g.addColorStop(0, '#6e2f92'); g.addColorStop(.45, '#3b1152'); g.addColorStop(1, '#1b0629');
-  x.fillStyle = g; x.fillRect(0, 0, Wc, Hc);
-  mx.fillStyle = 'rgb(0,150,0)'; mx.fillRect(0, 0, Wc, Hc);   // dielectric, mid rough
-  const goldFill = (ctx2) => { const gg = ctx2.createLinearGradient(0, 0, Wc, Hc); gg.addColorStop(0, '#caa058'); gg.addColorStop(.5, '#f2d894'); gg.addColorStop(1, '#b8893c'); return gg; };
-  const both = (fn) => { x.save(); fn(x, goldFill(x)); x.restore(); mx.save(); fn(mx, 'rgb(0,60,255)'); mx.restore(); };
-  // subtle thai pattern
-  x.globalAlpha = .06; x.strokeStyle = '#ecc978'; x.lineWidth = 2; for (let i = -Hc; i < Wc; i += 46) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i + Hc, Hc); x.stroke(); x.beginPath(); x.moveTo(i + Hc, 0); x.lineTo(i, Hc); x.stroke(); } x.globalAlpha = 1;
-  both((cx, f) => { cx.strokeStyle = f; cx.lineWidth = 6; cx.strokeRect(44, 44, Wc - 88, Hc - 88); cx.lineWidth = 2.5; cx.strokeRect(62, 62, Wc - 124, Hc - 124); });
-  const logo = await getImg('a/logo-white.png'); x.drawImage(logo, 130, 120, 170 * logo.naturalWidth / logo.naturalHeight, 170);
-  both((cx, f) => { cx.fillStyle = f; cx.font = '500 34px Montserrat'; cx.letterSpacing = '12px'; cx.textAlign = 'right'; cx.fillText('ПОДАРОЧНЫЙ СЕРТИФИКАТ', Wc - 130, 200); });
-  x.fillStyle = '#fff'; x.font = '500 230px "Cormorant Garamond"'; x.fillText('Ты и Я', 124, 610);
-  x.fillStyle = 'rgba(255,255,255,.75)'; x.font = '400 38px Montserrat'; x.letterSpacing = '8px'; x.fillText('SPA ДЛЯ ПАР · 2,5 ЧАСА', 132, 700);
-  both((cx, f) => { cx.fillStyle = f; cx.font = '600 190px "Cormorant Garamond"'; cx.letterSpacing = '0px'; cx.fillText('70 000 ₸', 124, 930); });
-  both((cx, f) => { cx.fillStyle = f; cx.font = '500 32px Montserrat'; cx.letterSpacing = '8px'; cx.fillText('IMBIR.KZ · ДЕЙСТВУЕТ 3 МЕСЯЦА', 132, 1040); });
-  const qr = await getImg('a/qr.svg'); both((cx) => { cx.drawImage(qr, Wc - 470, Hc - 470, 340, 340); });
-  const icon = iconImg; both((cx) => { cx.globalAlpha = .9; cx.drawImage(icon, Wc - 420, 330, 240, 240 * icon.naturalHeight / icon.naturalWidth); });
-  const ft = new THREE.CanvasTexture(c); ft.colorSpace = THREE.SRGBColorSpace; ft.anisotropy = 8;
-  const mt = new THREE.CanvasTexture(m);
-  const back = new THREE.Texture(await getImg('a/d_2a6ec6fd-9c72-4c69-b2b8-4e86ab1f81f4.webp')); back.colorSpace = THREE.SRGBColorSpace; back.needsUpdate = true;
-  return {ft, mt, back};
+const CERTS = ['a/cert_0.png', 'a/cert_1.png', 'a/cert_2.png', 'a/cert_3.png'];
+function certBack() {
+  const c = document.createElement('canvas'); c.width = 900; c.height = 800; const x = c.getContext('2d');
+  const g = x.createRadialGradient(300, 0, 0, 300, 0, 1000); g.addColorStop(0, '#5a2378'); g.addColorStop(1, '#1d0629'); x.fillStyle = g; x.fillRect(0, 0, 900, 800);
+  x.strokeStyle = 'rgba(236,201,120,.7)'; x.lineWidth = 4; x.strokeRect(26, 26, 848, 748);
+  const ih = 260, iw = ih * iconImg.naturalWidth / iconImg.naturalHeight; x.drawImage(iconImg, 450 - iw / 2, 400 - ih / 2, iw, ih);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 async function initS4() {
   S4.scene.background = bgTexture('#3a1250', '#16051f', '#060108', .5);
   S4.key = keyLights(S4.scene);
-  S4.spot = new THREE.PointLight(0xfff0d0, 2.2, 0, 0); S4.scene.add(S4.spot);
-  const {ft, mt, back} = await certTextures();
-  const edge = new THREE.MeshStandardMaterial({color: 0xd9b062, metalness: 1, roughness: .25, envMap: envTex});
-  const front = new THREE.MeshPhysicalMaterial({map: ft, color: new THREE.Color(.62, .6, .64), emissiveMap: ft, emissive: new THREE.Color(1, 1, 1), emissiveIntensity: .32, metalnessMap: mt, roughnessMap: mt, metalness: 1, roughness: 1, envMap: envTex, clearcoat: .12, clearcoatRoughness: .35, envMapIntensity: .5});
-  const backM = new THREE.MeshPhysicalMaterial({map: back, metalness: 0, roughness: .35, envMap: envTex, envMapIntensity: .8, clearcoat: .8, clearcoatRoughness: .2});
-  const geo = new THREE.BoxGeometry(900, 586, 10);
-  S4.card = new THREE.Mesh(geo, [edge, edge, edge, edge, front, backM]);
-  S4.scene.add(S4.card);
+  S4.spot = new THREE.PointLight(0xfff0d0, 2.0, 0, 0); S4.scene.add(S4.spot);
+  const edge = new THREE.MeshStandardMaterial({color: 0xe9e4ea, metalness: .6, roughness: .3, envMap: envTex});
+  const backT = certBack();
+  const backM = new THREE.MeshPhysicalMaterial({map: backT, color: new THREE.Color(.65, .62, .66), emissiveMap: backT, emissive: new THREE.Color(1, 1, 1), emissiveIntensity: .3, roughness: .4, envMap: envTex, envMapIntensity: .5, clearcoat: .2});
+  S4.ring = new THREE.Group(); S4.scene.add(S4.ring); S4.cards = [];
+  for (let i = 0; i < CERTS.length; i++) {
+    const im = await getImg(CERTS[i]); const tx = new THREE.Texture(im); tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = 8; tx.needsUpdate = true;
+    const front = new THREE.MeshPhysicalMaterial({map: tx, color: new THREE.Color(.62, .6, .64), emissiveMap: tx, emissive: new THREE.Color(1, 1, 1), emissiveIntensity: .36, roughness: .38, metalness: 0, envMap: envTex, envMapIntensity: .45, clearcoat: .15, clearcoatRoughness: .3, transparent: true});
+    const w = 700, h = w * im.naturalHeight / im.naturalWidth;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 8), [edge, edge, edge, edge, front, backM]);
+    const ang = i / CERTS.length * Math.PI * 2; const piv = new THREE.Group(); piv.rotation.y = ang; m.position.z = 560; piv.add(m); S4.ring.add(piv);
+    S4.cards.push({m, piv, ang, front});
+  }
   S4.flakes = bokehField(260, [-900, 900, -1400, 1400, -1500, 900], 31); S4.scene.add(S4.flakes);
   S4.w1 = splitWord($('c-h1')); S4.w2 = splitWord($('c-h2'));
 }
 function renderS4(t) {
   const lt = t - S4.t0;
-  const inK = P(lt, 0, 1.0, E.out5);
-  const flip = P(lt, 1.45, 2.15, E.io);
-  const c = S4.card;
-  c.position.set(0, L(-1500, 20, inK) + Math.sin(lt * 1.6) * 14, L(-600, 0, inK));
-  c.rotation.set(L(.9, 0, inK) + Math.sin(lt * 1.1) * .07, L(Math.PI * 3, Math.PI, inK) + flip * Math.PI + Math.sin(lt * .9) * .22, L(-.4, 0, inK) + Math.sin(lt * .7) * .04);
-  c.scale.setScalar(.92);
-  S4.spot.position.set(L(-900, 900, P(lt, 1.6, 3.6, E.io)), 500, 900);
+  const inK = P(lt, 0, .9, E.out5);
+  // carousel spins in and settles with card 0 in front; then it steps forward
+  const spin = P(lt, 0, 1.9, E.out5);
+  S4.ring.rotation.y = L(-Math.PI * 1.75, 0, spin);
+  S4.ring.position.set(0, L(-900, -75, inK) + Math.sin(lt * 1.5) * 10, L(-1400, -560, inK));
+  S4.ring.rotation.x = L(.35, .05, inK);
+  const hero = P(lt, 1.9, 2.6, E.io);
+  S4.cards.forEach((c, i) => {
+    if (i === 0) { c.m.position.set(0, 0, L(560, 690, hero)); c.m.rotation.set(Math.sin(lt * 1.1) * .06 * hero, Math.sin(lt * .9) * .22 * hero, Math.sin(lt * .7) * .03); c.m.scale.setScalar(L(1, 1.02, hero)); }
+    else { c.m.position.set(0, -hero * 120, L(560, 300, hero)); c.m.scale.setScalar(L(1, .8, hero)); }
+    const o = i === 0 ? 1 : 1 - hero * .85; c.front.opacity = o; c.m.visible = o > .02;
+  });
+  S4.spot.position.set(L(-900, 900, P(lt, 2.0, 3.75, E.io)), 500, 900);
   driftBokeh(S4.flakes, t, 40);
   camera.position.set(0, 0, D0); camera.lookAt(0, 0, 0);
   renderer.render(S4.scene, camera);
