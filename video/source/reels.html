@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Imbir reels</title>
+<link href="fonts/fonts.css" rel="stylesheet">
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.min.js"}}</script>
+<style>
+:root{--gold:#b69244;--gold-hi:#ecc978;--serif:"Cormorant Garamond",serif;--sans:"Montserrat",sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#000}
+#stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:#0c0312;font-family:var(--sans);color:#fff}
+canvas.full{position:absolute;left:0;top:0;width:1080px;height:1920px}
+.layer{position:absolute;inset:0;display:none}
+.abs{position:absolute}
+.eyebrow{font-weight:500;font-size:22px;letter-spacing:.42em;text-transform:uppercase;color:var(--gold-hi)}
+.center{left:0;right:0;text-align:center}
+.serif{font-family:var(--serif)}
+.word{position:absolute;font-family:var(--serif);line-height:.95;white-space:nowrap}
+.word span{display:inline-block}
+.foil{background:linear-gradient(100deg,#9c7429 0%,#e9c77a 28%,#fff4d2 45%,#e9c77a 60%,#a47d2e 80%,#e9c77a 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent}
+.shadow{text-shadow:0 8px 40px rgba(0,0,0,.65)}
+.pill{font-weight:600;font-size:24px;letter-spacing:.2em;text-transform:uppercase;padding:28px 54px;border-radius:999px;background:linear-gradient(135deg,#e4c47c,#b69244);color:#2b0b3d;white-space:nowrap;box-shadow:0 20px 60px rgba(182,146,68,.35)}
+.chip{display:inline-block;font-size:22px;letter-spacing:.12em;padding:16px 28px;border-radius:999px;border:1px solid rgba(236,201,120,.55);color:#fff;background:rgba(28,7,38,.45);margin:8px 6px}
+#flash{position:absolute;inset:0;z-index:40;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,#fff6dc 0%,#ecc978 35%,rgba(236,201,120,0) 75%);mix-blend-mode:screen;opacity:0}
+#leak{position:absolute;inset:0;z-index:39;pointer-events:none;mix-blend-mode:screen;opacity:0}
+#grain{position:absolute;left:0;top:0;width:1080px;height:1920px;z-index:41;pointer-events:none;mix-blend-mode:overlay;opacity:.14}
+#vig{position:absolute;inset:0;z-index:42;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 55%,rgba(0,0,0,.5) 100%)}
+.city{position:absolute;left:0;right:0;text-align:center;font-family:var(--serif);font-size:62px;font-weight:500;transform-origin:50% 50% -40px}
+.city small{font-family:var(--sans);font-size:18px;letter-spacing:.2em;color:var(--gold-hi);margin-left:18px;vertical-align:middle;text-transform:uppercase}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas class="full" id="gl" width="1080" height="1920"></canvas>
+  <canvas class="full" id="c2d" width="1080" height="1920" style="display:none"></canvas>
+
+  <!-- S1 hook -->
+  <div class="layer" id="L1">
+    <img class="abs" id="h-logo" src="a/logo-white.png" style="left:140px;top:1190px;width:800px;-webkit-mask-image:linear-gradient(90deg,#000 0%,#000 40%,transparent 60%,transparent 100%);-webkit-mask-size:300% 100%">
+    <div class="abs eyebrow center" id="h-sub" style="top:1470px;font-size:20px">Тайский спа · Казахстан</div>
+  </div>
+
+  <!-- S2 Thailand -->
+  <div class="layer" id="L2">
+    <div class="abs" id="t-shade" style="inset:0;background:linear-gradient(0deg,rgba(12,3,18,.9) 0%,rgba(12,3,18,.35) 38%,rgba(12,3,18,0) 60%)"></div>
+    <div class="abs eyebrow center" id="t-eye" style="top:1110px">«Имбирь» — тайский спа</div>
+    <div class="word center shadow" id="t-w1" style="top:1170px;font-size:150px;font-weight:500">начинается</div>
+    <div class="word center foil" id="t-w2" style="top:1320px;font-size:170px;font-style:italic">здесь</div>
+  </div>
+
+  <!-- S3 gallery words -->
+  <div class="layer" id="L3"></div>
+
+  <!-- S4 certificate -->
+  <div class="layer" id="L4">
+    <div class="abs eyebrow center" id="c-eye" style="top:300px">Подарочный сертификат</div>
+    <div class="word center" id="c-h1" style="top:360px;font-size:128px;font-weight:500">Подарите</div>
+    <div class="word center foil" id="c-h2" style="top:490px;font-size:128px;font-style:italic">тепло Таиланда</div>
+    <div class="abs center" id="c-chips" style="top:1300px;padding:0 60px">
+      <span class="chip">⏱ за 2 минуты</span><span class="chip">PDF с QR на email</span><span class="chip">во всех салонах сети</span>
+    </div>
+  </div>
+
+  <!-- S5 cities -->
+  <div class="layer" id="L5">
+    <div class="word center foil" id="s-n" style="top:250px;font-size:430px;font-weight:500;line-height:1">9</div>
+    <div class="word center" id="s-l" style="top:690px;font-size:96px;font-style:italic;color:var(--gold-hi)">салонов</div>
+    <div class="abs eyebrow center" id="s-e" style="top:820px">в 7 городах Казахстана</div>
+    <div id="s-cities" style="position:absolute;inset:0;perspective:900px"></div>
+  </div>
+
+  <!-- S6 finale -->
+  <div class="layer" id="L6">
+    <canvas class="full" id="ink" width="1080" height="1920"></canvas>
+    <div class="abs" id="f-btn" style="left:50%;top:1270px"><span class="pill">Подарить сертификат</span></div>
+    <div class="abs center" id="f-ph" style="top:1400px;font-size:26px;letter-spacing:.12em;color:rgba(255,255,255,.8)">+7 708 111 8098 · 9 салонов · 7 городов</div>
+  </div>
+
+  <div id="leak"></div>
+  <div id="flash"></div>
+  <canvas id="grain" width="540" height="960"></canvas>
+  <div id="vig"></div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from './node_modules/three/examples/jsm/environments/RoomEnvironment.js';
+
+const FPS = 30, DUR = 25, BEAT = 60 / 96, BAR = BEAT * 4;
+const W = 1080, H = 1920;
+const FR = {"atmo-candle":89,"atmo-details":62,"atmo-hammam":115,"atmo-locker":73,"atmo-lounge":69,"atmo-massage":113,"atmo-rooms":120,"atmo-sauna":73,"atmo-tea":82,"atmo-towel":142,"garden":66,"hammam":105,"lounge":124,"petals":111,"reception":90,"welcome-ru-v2":300};
+const E = {out: t => 1 - Math.pow(1 - t, 3), out5: t => 1 - Math.pow(1 - t, 5), io: t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2, in3: t => t*t*t, lin: t => t, sine: t => .5 - .5*Math.cos(Math.PI*t), io2: t => t < .5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2};
+const cl = x => Math.max(0, Math.min(1, x));
+const P = (t, a, b, e = E.out) => e(cl((t - a) / (b - a)));
+const L = (a, b, k) => a + (b - a) * k;
+const $ = id => document.getElementById(id);
+function rnd(i) { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+function st(el, {o = 1, x = 0, y = 0, s = 1, r = 0, b = 0, pre = ''} = {}) {
+  el.style.opacity = o.toFixed(4);
+  el.style.transform = `${pre} translate(${x.toFixed(2)}px,${y.toFixed(2)}px) scale(${s.toFixed(4)}) rotate(${r.toFixed(3)}deg)`;
+  el.style.filter = b > 0.05 ? `blur(${b.toFixed(2)}px)` : 'none';
+}
+function rv(el, t, a, z = 999, {d = .7, dy = 34, dx = 0, dz = .35, blur = 12, s0 = 1, pre = ''} = {}) {
+  const i = P(t, a, a + d, E.out5), o = 1 - P(t, z - dz, z, E.io);
+  st(el, {o: i * o, x: (1 - i) * dx, y: (1 - i) * dy - (1 - o) * 14, b: (1 - i) * blur + (1 - o) * 8, s: L(s0, 1, i), pre});
+}
+function splitWord(el) { const txt = el.textContent; const fo = el.classList.contains('foil'); if (fo) el.classList.remove('foil'); el.innerHTML = ''; [...txt].forEach(ch => { const s = document.createElement('span'); if (fo) s.className = 'foil'; s.textContent = ch === ' ' ? ' ' : ch; el.appendChild(s); }); return [...el.children]; }
+function letters(spans, t, a, {stag = .035, d = .6, dy = 60, blur = 14, z = 999} = {}) {
+  spans.forEach((s, k) => { const i = P(t, a + k * stag, a + k * stag + d, E.out5); const o = 1 - P(t, z - .3, z, E.io);
+    s.style.opacity = (i * o).toFixed(3); s.style.transform = `translateY(${((1 - i) * dy).toFixed(1)}px) rotateX(${((1 - i) * 60).toFixed(1)}deg)`; const bl = (1 - i) * blur + (1 - o) * 10; s.style.filter = bl > .1 ? `blur(${bl.toFixed(1)}px)` : 'none'; });
+}
+const imgCache = new Map();
+function getImg(src) { if (!imgCache.has(src)) { const im = new Image(); im.src = src; imgCache.set(src, im.decode().then(() => im).catch(() => im)); } return imgCache.get(src); }
+function frameSrc(clip, lt, speed = 1) { const n = FR[clip]; let f = Math.floor(Math.max(0, lt) * FPS * speed); const per = 2 * (n - 1); f = f % per; if (f >= n) f = per - f; return `frames/${clip}/${String(f + 1).padStart(4, '0')}.jpg`; }
+function drawCover(ctx, im, cw, ch, sc = 1, ox = .5, oy = .5) { const r = Math.max(cw / im.naturalWidth, ch / im.naturalHeight) * sc; const w = im.naturalWidth * r, h = im.naturalHeight * r; ctx.drawImage(im, (cw - w) * ox, (ch - h) * oy, w, h); }
+
+// ---------------- three.js setup ----------------
+const renderer = new THREE.WebGLRenderer({canvas: $('gl'), antialias: true, preserveDrawingBuffer: true});
+renderer.setPixelRatio(1); renderer.setSize(W, H, false);
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const pmrem = new THREE.PMREMGenerator(renderer);
+const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+const D0 = (H / 2) / Math.tan(THREE.MathUtils.degToRad(20));   // camera distance where 1 unit == 1px
+const camera = new THREE.PerspectiveCamera(40, W / H, 5, 40000);
+
+function bgTexture(c1, c2, c3, cy = .45) {
+  const c = document.createElement('canvas'); c.width = 540; c.height = 960; const x = c.getContext('2d');
+  const g = x.createRadialGradient(270, 960 * cy, 0, 270, 960 * cy, 820); g.addColorStop(0, c1); g.addColorStop(.55, c2); g.addColorStop(1, c3);
+  x.fillStyle = g; x.fillRect(0, 0, 540, 960); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+// soft round sprite points (bokeh / dust)
+function pointsMaterial(color = 0xecc478) {
+  return new THREE.ShaderMaterial({
+    uniforms: {uColor: {value: new THREE.Color(color)}, uOpacity: {value: 1}, uScale: {value: D0}},
+    vertexShader: `attribute float aSize; attribute float aAlpha; varying float vA; uniform float uScale;
+      void main(){ vec4 mv = modelViewMatrix * vec4(position,1.); gl_Position = projectionMatrix * mv; gl_PointSize = aSize * uScale / -mv.z; vA = aAlpha; }`,
+    fragmentShader: `uniform vec3 uColor; uniform float uOpacity; varying float vA;
+      void main(){ float d = length(gl_PointCoord - .5); float a = smoothstep(.5, .12, d) * vA * uOpacity; gl_FragColor = vec4(uColor * a, a); }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  });
+}
+function makePoints(n) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+  g.setAttribute('aSize', new THREE.BufferAttribute(new Float32Array(n), 1));
+  g.setAttribute('aAlpha', new THREE.BufferAttribute(new Float32Array(n), 1));
+  const m = pointsMaterial(); const p = new THREE.Points(g, m); p.frustumCulled = false; return p;
+}
+function bokehField(n, box, seed) {
+  const p = makePoints(n); const pos = p.geometry.attributes.position.array, sz = p.geometry.attributes.aSize.array, al = p.geometry.attributes.aAlpha.array;
+  for (let i = 0; i < n; i++) { pos[i * 3] = L(box[0], box[1], rnd(i + seed)); pos[i * 3 + 1] = L(box[2], box[3], rnd(i + seed + 50)); pos[i * 3 + 2] = L(box[4], box[5], rnd(i + seed + 90));
+    const big = rnd(i + seed + 7) < .18; sz[i] = big ? 40 + rnd(i + seed + 3) * 70 : 4 + rnd(i + seed + 3) * 9; al[i] = big ? .08 + rnd(i + seed + 11) * .12 : .35 + rnd(i + seed + 11) * .5; }
+  p.userData.base = Float32Array.from(pos); return p;
+}
+function driftBokeh(p, t, amp = 30) {
+  const pos = p.geometry.attributes.position.array, b = p.userData.base;
+  for (let i = 0; i < pos.length / 3; i++) { pos[i * 3] = b[i * 3] + Math.sin(t * .5 + i) * amp; pos[i * 3 + 1] = b[i * 3 + 1] + t * (10 + (i % 7) * 4) + Math.cos(t * .4 + i * 1.3) * amp; }
+  p.geometry.attributes.position.needsUpdate = true;
+}
+
+// ---------------- gold medallion ----------------
+let iconImg;
+function medallionMaps() {
+  const S = 1024, c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d');
+  x.fillStyle = '#000'; x.fillRect(0, 0, S, S);
+  const ic = document.createElement('canvas'); ic.width = S; ic.height = S; const ix = ic.getContext('2d');
+  const ih = S * .6, iw = ih * iconImg.naturalWidth / iconImg.naturalHeight;
+  ix.translate(S / 2, S / 2); ix.rotate(-Math.PI / 2); ix.drawImage(iconImg, -iw / 2, -ih / 2 - S * .01, iw, ih); ix.setTransform(1, 0, 0, 1, 0, 0); ix.globalCompositeOperation = 'source-in'; ix.fillStyle = '#fff'; ix.fillRect(0, 0, S, S);
+  x.filter = 'blur(5px)'; x.drawImage(ic, 0, 0);
+  x.strokeStyle = '#fff'; x.lineWidth = 16; x.beginPath(); x.arc(S / 2, S / 2, S * .455, 0, 6.2832); x.stroke();
+  x.lineWidth = 5; x.beginPath(); x.arc(S / 2, S / 2, S * .415, 0, 6.2832); x.stroke();
+  x.filter = 'none';
+  const hd = x.getImageData(0, 0, S, S).data; const hgt = new Float32Array(S * S); for (let i = 0; i < S * S; i++) hgt[i] = hd[i * 4] / 255;
+  const nc = document.createElement('canvas'); nc.width = nc.height = S; const nx = nc.getContext('2d'); const nd = nx.createImageData(S, S);
+  const rc = document.createElement('canvas'); rc.width = rc.height = S; const rx = rc.getContext('2d'); const rd = rx.createImageData(S, S);
+  const k = 7;
+  for (let y = 0; y < S; y++) for (let xx = 0; xx < S; xx++) {
+    const i = y * S + xx; const l = hgt[y * S + Math.max(0, xx - 1)], r = hgt[y * S + Math.min(S - 1, xx + 1)], u = hgt[Math.max(0, y - 1) * S + xx], d = hgt[Math.min(S - 1, y + 1) * S + xx];
+    let vx = -(r - l) * k, vy = (d - u) * k, vz = 1; const m = Math.hypot(vx, vy, vz); vx /= m; vy /= m; vz /= m;
+    nd.data[i * 4] = (vx * .5 + .5) * 255; nd.data[i * 4 + 1] = (vy * .5 + .5) * 255; nd.data[i * 4 + 2] = (vz * .5 + .5) * 255; nd.data[i * 4 + 3] = 255;
+    const rr = hgt[i] > .4 ? .16 : .42 + (rnd(y * 3.1) - .5) * .12;   // polished relief, brushed field
+    rd.data[i * 4] = rd.data[i * 4 + 1] = rd.data[i * 4 + 2] = rr * 255; rd.data[i * 4 + 3] = 255;
+  }
+  nx.putImageData(nd, 0, 0); rx.putImageData(rd, 0, 0);
+  const nt = new THREE.CanvasTexture(nc), rt = new THREE.CanvasTexture(rc);
+  return {nt, rt};
+}
+function makeMedallion() {
+  const {nt, rt} = medallionMaps();
+  const gold = new THREE.Color('#e3b862');
+  const face = new THREE.MeshStandardMaterial({color: gold, metalness: 1, roughness: 1, roughnessMap: rt, normalMap: nt, normalScale: new THREE.Vector2(1.6, 1.6), envMap: envTex, envMapIntensity: 1.3, transparent: true});
+  const side = new THREE.MeshStandardMaterial({color: gold, metalness: 1, roughness: .22, envMap: envTex, envMapIntensity: 1.3, transparent: true});
+  const geo = new THREE.CylinderGeometry(330, 330, 34, 160, 1);
+  const m = new THREE.Mesh(geo, [side, face, face]); m.rotation.x = Math.PI / 2;
+  const g = new THREE.Group(); g.add(m);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(330, 14, 24, 160), side); g.add(rim);
+  g.userData.mats = [face, side];
+  return g;
+}
+function setOpacity(group, o) { group.userData.mats.forEach(m => { m.opacity = o; m.visible = o > .003; }); }
+function keyLights(scene) {
+  const k = new THREE.DirectionalLight(0xffe2b0, 2.4); k.position.set(-900, 1200, 1600); scene.add(k);
+  const r = new THREE.DirectionalLight(0xb070ff, 1.3); r.position.set(1200, -400, -600); scene.add(r);
+  const f = new THREE.DirectionalLight(0xffffff, .6); f.position.set(0, 0, 2000); scene.add(f);
+  scene.add(new THREE.AmbientLight(0x442255, .5));
+  return k;
+}
+
+// ================= SCENE 1: particle vortex -> medallion =================
+const S1 = {scene: new THREE.Scene()};
+async function initS1() {
+  S1.scene.background = bgTexture('#2c0c3c', '#12041a', '#060108');
+  S1.key = keyLights(S1.scene);
+  const H0 = 400; const iw = Math.round(H0 * iconImg.naturalWidth / iconImg.naturalHeight);
+  const oc = document.createElement('canvas'); oc.width = iw; oc.height = H0; const o = oc.getContext('2d'); o.drawImage(iconImg, 0, 0, iw, H0);
+  const d = o.getImageData(0, 0, iw, H0).data; const pts = []; for (let y = 0; y < H0; y += 2) for (let x = 0; x < iw; x += 2) if (d[(y * iw + x) * 4 + 3] > 140) pts.push([x, y]);
+  const N = 5200; S1.pts = makePoints(N); S1.N = N; S1.cy = 200; // medallion centre (world y)
+  S1.p = [];
+  for (let i = 0; i < N; i++) { const q = pts[Math.floor(rnd(i * 3.1) * pts.length)];
+    S1.p.push({tx: q[0] - iw / 2, ty: S1.cy + H0 / 2 - q[1] - 4, a0: rnd(i + 11) * 6.2832, r0: 260 + rnd(i + 13) * 900, z0: -9000 + rnd(i + 17) * 11000, d: rnd(i + 19) * .7, sz: 9 + rnd(i + 23) * 14, al: .65 + rnd(i + 29) * .35}); }
+  S1.scene.add(S1.pts);
+  S1.med = makeMedallion(); S1.med.position.set(0, S1.cy, 0); S1.scene.add(S1.med);
+}
+function renderS1(t) {
+  const pos = S1.pts.geometry.attributes.position.array, sz = S1.pts.geometry.attributes.aSize.array, al = S1.pts.geometry.attributes.aAlpha.array;
+  const fade = 1 - P(t, 2.0, 2.6, E.io);
+  for (let i = 0; i < S1.N; i++) { const p = S1.p[i];
+    const tt = Math.min(t, .5 + p.d);
+    const a = p.a0 + tt * 1.6; let z = p.z0 + tt * 3200; z = ((z + 9000) % 11500 + 11500) % 11500 - 9000;
+    const x0 = Math.cos(a) * p.r0, y0 = Math.sin(a) * p.r0 + S1.cy;
+    const k = E.io(cl((t - .5 - p.d) / 1.35));
+    const sw = (1 - k) * 1.2;
+    pos[i * 3] = L(x0, p.tx, k) + Math.sin(k * 3.14) * Math.cos(a) * 180 * sw; pos[i * 3 + 1] = L(y0, p.ty, k) + Math.sin(k * 3.14) * Math.sin(a) * 180 * sw; pos[i * 3 + 2] = L(z, 30, k);
+    sz[i] = p.sz * L(1, .45, k); al[i] = p.al * fade * cl(t / .25 + .4) * (.65 + .35 * Math.sin(t * 6 + i));
+  }
+  S1.pts.geometry.attributes.position.needsUpdate = true; S1.pts.geometry.attributes.aSize.needsUpdate = true; S1.pts.geometry.attributes.aAlpha.needsUpdate = true;
+  const mi = P(t, 1.85, 2.5, E.io); setOpacity(S1.med, mi);
+  S1.med.rotation.y = L(-Math.PI * 1.0, 0, P(t, 1.9, 3.3, E.out5)) + Math.sin(t * 1.2) * .08;
+  S1.med.rotation.x = Math.sin(t * .9) * .06;
+  S1.med.scale.setScalar(L(.86, 1, P(t, 1.9, 3.0, E.out5)));
+  S1.key.position.set(L(-1400, 1000, P(t, 2.0, 3.75, E.io)), 1100, 1500);
+  const push = P(t, 3.3, 3.75, E.in3);
+  camera.position.set(0, S1.cy * .4, D0 * L(1, .55, push)); camera.lookAt(0, S1.cy * .4, 0);
+  renderer.render(S1.scene, camera);
+  // DOM
+  const lo = P(t, 2.6, 3.4, E.io); const lg = $('h-logo'); lg.style.opacity = P(t, 2.55, 2.8) * (1 - push); lg.style.webkitMaskPosition = `${L(100, 0, lo)}% 0`;
+  lg.style.transform = `scale(${L(1.04, 1, lo) * L(1, 1.3, push)})`;
+  rv($('h-sub'), t, 3.0, 3.75, {dy: 12, dz: .3});
+}
+
+// ================= SCENE 2: THAILAND text with footage (2D canvas) =================
+const S2 = {word: 'ТАИЛАНД', font: '600 196px "Cormorant Garamond"', cy: 880};
+function initS2() {
+  S2.ctx = $('c2d').getContext('2d'); S2.tc = document.createElement('canvas'); S2.tc.width = W; S2.tc.height = H;
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+  x.font = S2.font; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#fff'; x.fillText(S2.word, 540, S2.cy);
+  const d = x.getImageData(0, 0, W, H).data; const on = (px, py) => d[(py * W + px) * 4 + 3] > 200;
+  let best = [540, S2.cy], br = 0;
+  for (let py = S2.cy - 100; py < S2.cy + 100; py += 3) for (let px = 300; px < 780; px += 3) { if (!on(px, py)) continue; let r = 1; while (r < 60 && on(px + r, py) && on(px - r, py) && on(px, py + r) && on(px, py - r)) r++; const sc = r - Math.hypot(px - 540, py - S2.cy) * .02; if (sc > br) { br = sc; best = [px, py]; } }
+  S2.fp = best; S2.w1 = splitWord($('t-w1')); S2.w2 = splitWord($('t-w2'));
+}
+async function renderS2(t) {
+  const a = 3.75, lt = t - a;
+  const im = await getImg(frameSrc('garden', lt * .7 + .2));
+  const ctx = S2.ctx; ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = '#07010a'; ctx.fillRect(0, 0, W, H);
+  const z = P(t, 4.85, 5.6, E.in3); const sc = Math.exp(L(0, Math.log(90), z)) * L(1.08, 1, P(t, a, 5, E.out));
+  const [fx, fy] = S2.fp;
+  const tc = S2.tc.getContext('2d'); tc.setTransform(1, 0, 0, 1, 0, 0); tc.clearRect(0, 0, W, H);
+  tc.translate(fx, fy); tc.scale(sc, sc); tc.translate(-fx, -fy); tc.font = S2.font; tc.textAlign = 'center'; tc.textBaseline = 'middle'; tc.fillStyle = '#fff';
+  tc.globalAlpha = P(t, a, a + .6); tc.fillText(S2.word, 540, S2.cy); tc.globalAlpha = 1;
+  // footage clipped by text
+  const layer = S2.layer || (S2.layer = Object.assign(document.createElement('canvas'), {width: W, height: H})); const lx = layer.getContext('2d');
+  lx.globalCompositeOperation = 'source-over'; lx.clearRect(0, 0, W, H); lx.filter = 'contrast(1.1) saturate(1.12)'; drawCover(lx, im, W, H, L(1.2, 1.02, P(t, a, 7.5, E.out))); lx.filter = 'none';
+  if (z < .97) { lx.globalCompositeOperation = 'destination-in'; lx.drawImage(S2.tc, 0, 0); }
+  // faint blurred footage behind the letters
+  ctx.globalAlpha = .18 * (1 - z); ctx.filter = 'blur(30px)'; drawCover(ctx, im, W, H, 1.3); ctx.filter = 'none'; ctx.globalAlpha = 1;
+  ctx.drawImage(layer, 0, 0);
+  if (z < .9) { ctx.save(); ctx.translate(fx, fy); ctx.scale(sc, sc); ctx.translate(-fx, -fy); ctx.font = S2.font; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.strokeStyle = `rgba(236,201,120,${(.85 * (1 - z) * P(t, a + .2, a + .8)).toFixed(3)})`; ctx.lineWidth = 1.6 / sc; ctx.strokeText(S2.word, 540, S2.cy); ctx.restore(); }
+  $('t-shade').style.opacity = P(t, 5.5, 6.1);
+  rv($('t-eye'), t, 5.75, 999, {dy: 14});
+  letters(S2.w1, t, 5.7, {stag: .03});
+  letters(S2.w2, t, 6.05, {stag: .05, d: .7});
+}
+
+// ================= SCENE 3: 3D gallery fly-through =================
+const PANELS = [
+  {clip: 'lounge', eye: 'Зона отдыха', w: ['Тишина'], italic: true},
+  {clip: 'atmo-candle', eye: 'Свечи и ароматы', w: ['Тепло'], italic: false},
+  {clip: 'hammam', eye: 'Турецкая баня', w: ['Хаммам'], italic: false},
+  {clip: 'atmo-massage', eye: 'Дипломированные мастера', w: ['Мастера', 'из Таиланда'], italic: false},
+  {clip: 'petals', eye: 'SPA‑церемонии', w: ['Ритуалы'], italic: true},
+];
+const S3 = {scene: new THREE.Scene(), t0: 7.5, step: 1.25, dist: 1850};
+function initS3() {
+  S3.scene.background = bgTexture('#26092f', '#12041a', '#050107', .5);
+  S3.scene.fog = new THREE.Fog(0x0e0314, 2600, 9000);
+  keyLights(S3.scene);
+  const pw = 540, ph = 960;
+  PANELS.forEach((p, i) => {
+    const g = new THREE.Group();
+    const x = (i % 2 ? 1 : -1) * 300, y = [0, 140, -90, 110, -40][i], z = -i * 3000, ry = (i % 2 ? -1 : 1) * .2;
+    g.position.set(x, y, z); g.rotation.y = ry;
+    const tex = new THREE.Texture(); tex.colorSpace = THREE.SRGBColorSpace; tex.minFilter = THREE.LinearFilter;
+    const mat = new THREE.MeshBasicMaterial({map: tex, color: 0xffffff});
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(pw, ph), mat); g.add(mesh);
+    const frame = new THREE.Mesh(new THREE.PlaneGeometry(pw + 14, ph + 14), new THREE.MeshStandardMaterial({color: 0xd8b060, metalness: 1, roughness: .3, envMap: envTex})); frame.position.z = -2; g.add(frame);
+    const sh = new THREE.Mesh(new THREE.PlaneGeometry(pw + 260, ph + 260), new THREE.MeshBasicMaterial({map: shadowTex(), transparent: true, depthWrite: false})); sh.position.set(30, -40, -40); g.add(sh);
+    S3.scene.add(g); p.g = g; p.tex = tex;
+    // camera target for this panel
+    const n = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), ry);
+    p.cam = g.position.clone().add(n.multiplyScalar(S3.dist)); p.look = g.position.clone();
+  });
+  S3.bokeh = bokehField(700, [-2600, 2600, -2400, 2400, -15000, 2500], 7); S3.scene.add(S3.bokeh);
+  // words
+  const L3 = $('L3');
+  PANELS.forEach((p, i) => {
+    const box = document.createElement('div'); box.className = 'abs'; box.style.cssText = 'left:0;right:0;top:0;bottom:0';
+    const e = document.createElement('div'); e.className = 'abs eyebrow center shadow'; e.textContent = p.eye; e.style.top = (p.w.length > 1 ? 1180 : 1290) + 'px'; box.appendChild(e);
+    p.spans = []; p.ey = e;
+    p.w.forEach((w, j) => { const d = document.createElement('div'); d.className = 'word center shadow' + (j === 1 ? ' foil' : ''); d.style.top = ((p.w.length > 1 ? 1230 : 1340) + j * 140) + 'px'; d.style.fontSize = (p.w.length > 1 ? 140 : 190) + 'px'; d.style.fontWeight = '500'; if (p.italic || j === 1) { d.style.fontStyle = 'italic'; d.style.fontWeight = '400'; } d.textContent = w; box.appendChild(d); p.spans.push(splitWord(d)); });
+    box.style.display = 'none'; p.box = box; L3.appendChild(box);
+  });
+}
+function shadowTex() {
+  if (S3.sht) return S3.sht; const c = document.createElement('canvas'); c.width = 256; c.height = 384; const x = c.getContext('2d');
+  x.filter = 'blur(26px)'; x.fillStyle = 'rgba(0,0,0,.75)'; x.fillRect(50, 50, 156, 284); S3.sht = new THREE.CanvasTexture(c); return S3.sht;
+}
+async function renderS3(t) {
+  const lt = t - S3.t0; const idx = Math.min(PANELS.length - 1, Math.max(0, Math.floor(lt / S3.step))); const ph = lt - idx * S3.step;
+  // camera: fast glide into panel idx during the first .55s, then gentle drift
+  const prev = PANELS[Math.max(0, idx - 1)], cur = PANELS[idx];
+  let k = idx === 0 ? 1 : P(ph, 0, .6, E.io);
+  const startCam = idx === 0 ? cur.cam.clone().add(new THREE.Vector3(0, 0, 2600)) : prev.cam, startLook = idx === 0 ? cur.look : prev.look;
+  if (idx === 0) k = P(lt, 0, .75, E.out5);
+  const cam = startCam.clone().lerp(cur.cam, k), look = startLook.clone().lerp(cur.look, k);
+  // arc the path a little so it feels like a dolly
+  cam.y += Math.sin(k * Math.PI) * 220; cam.x += Math.sin(k * Math.PI) * (idx % 2 ? 180 : -180);
+  const drift = P(ph, .5, S3.step + .1, E.lin);
+  const fwd = cur.look.clone().sub(cur.cam).normalize().multiplyScalar(drift * 160); cam.add(fwd);
+  camera.position.copy(cam); camera.lookAt(look);
+  camera.rotation.z += Math.sin(k * Math.PI) * (idx % 2 ? .05 : -.05);
+  // motion blur proportional to speed
+  const speed = idx === 0 ? (lt < .75 ? (1 - lt / .75) : 0) : Math.sin(cl(ph / .6) * Math.PI) * (ph < .6 ? 1 : 0);
+  $('gl').style.filter = speed > .05 ? `blur(${(speed * 7).toFixed(1)}px)` : 'none';
+  // textures for visible panels
+  const jobs = [];
+  PANELS.forEach((p, i) => { if (Math.abs(i - idx) > 1) return; const src = frameSrc(p.clip, lt - i * S3.step + 1, .8);
+    jobs.push(getImg(src).then(im => { if (p.tex.image !== im) { p.tex.image = im; p.tex.needsUpdate = true; } })); });
+  await Promise.all(jobs);
+  driftBokeh(S3.bokeh, t);
+  renderer.render(S3.scene, camera);
+  PANELS.forEach((p, i) => { const on = i === idx; p.box.style.display = on ? 'block' : 'none'; if (!on) return;
+    const a = S3.t0 + i * S3.step + .25, z = S3.t0 + (i + 1) * S3.step + (i === PANELS.length - 1 ? 0 : .05);
+    rv(p.ey, t, a - .05, z, {dy: 14, dz: .2});
+    p.spans.forEach((sp, j) => letters(sp, t, a + j * .12, {stag: .03, d: .55, z}));
+  });
+}
+
+// ================= SCENE 4: 3D certificate =================
+const S4 = {scene: new THREE.Scene(), t0: 13.75};
+async function certTextures() {
+  const Wc = 1800, Hc = 1172;
+  const c = document.createElement('canvas'); c.width = Wc; c.height = Hc; const x = c.getContext('2d');
+  const m = document.createElement('canvas'); m.width = Wc; m.height = Hc; const mx = m.getContext('2d'); // metalness (B) & roughness (G)
+  const g = x.createRadialGradient(Wc * .2, 0, 0, Wc * .2, 0, Wc * 1.1); g.addColorStop(0, '#6e2f92'); g.addColorStop(.45, '#3b1152'); g.addColorStop(1, '#1b0629');
+  x.fillStyle = g; x.fillRect(0, 0, Wc, Hc);
+  mx.fillStyle = 'rgb(0,150,0)'; mx.fillRect(0, 0, Wc, Hc);   // dielectric, mid rough
+  const goldFill = (ctx2) => { const gg = ctx2.createLinearGradient(0, 0, Wc, Hc); gg.addColorStop(0, '#caa058'); gg.addColorStop(.5, '#f2d894'); gg.addColorStop(1, '#b8893c'); return gg; };
+  const both = (fn) => { x.save(); fn(x, goldFill(x)); x.restore(); mx.save(); fn(mx, 'rgb(0,60,255)'); mx.restore(); };
+  // subtle thai pattern
+  x.globalAlpha = .06; x.strokeStyle = '#ecc978'; x.lineWidth = 2; for (let i = -Hc; i < Wc; i += 46) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i + Hc, Hc); x.stroke(); x.beginPath(); x.moveTo(i + Hc, 0); x.lineTo(i, Hc); x.stroke(); } x.globalAlpha = 1;
+  both((cx, f) => { cx.strokeStyle = f; cx.lineWidth = 6; cx.strokeRect(44, 44, Wc - 88, Hc - 88); cx.lineWidth = 2.5; cx.strokeRect(62, 62, Wc - 124, Hc - 124); });
+  const logo = await getImg('a/logo-white.png'); x.drawImage(logo, 130, 120, 170 * logo.naturalWidth / logo.naturalHeight, 170);
+  both((cx, f) => { cx.fillStyle = f; cx.font = '500 34px Montserrat'; cx.letterSpacing = '12px'; cx.textAlign = 'right'; cx.fillText('ПОДАРОЧНЫЙ СЕРТИФИКАТ', Wc - 130, 200); });
+  x.fillStyle = '#fff'; x.font = '500 230px "Cormorant Garamond"'; x.fillText('Ты и Я', 124, 610);
+  x.fillStyle = 'rgba(255,255,255,.75)'; x.font = '400 38px Montserrat'; x.letterSpacing = '8px'; x.fillText('SPA ДЛЯ ПАР · 2,5 ЧАСА', 132, 700);
+  both((cx, f) => { cx.fillStyle = f; cx.font = '600 190px "Cormorant Garamond"'; cx.letterSpacing = '0px'; cx.fillText('70 000 ₸', 124, 930); });
+  both((cx, f) => { cx.fillStyle = f; cx.font = '500 32px Montserrat'; cx.letterSpacing = '8px'; cx.fillText('IMBIR.KZ · ДЕЙСТВУЕТ 3 МЕСЯЦА', 132, 1040); });
+  const qr = await getImg('a/qr.svg'); both((cx) => { cx.drawImage(qr, Wc - 470, Hc - 470, 340, 340); });
+  const icon = iconImg; both((cx) => { cx.globalAlpha = .9; cx.drawImage(icon, Wc - 420, 330, 240, 240 * icon.naturalHeight / icon.naturalWidth); });
+  const ft = new THREE.CanvasTexture(c); ft.colorSpace = THREE.SRGBColorSpace; ft.anisotropy = 8;
+  const mt = new THREE.CanvasTexture(m);
+  const back = new THREE.Texture(await getImg('a/d_2a6ec6fd-9c72-4c69-b2b8-4e86ab1f81f4.webp')); back.colorSpace = THREE.SRGBColorSpace; back.needsUpdate = true;
+  return {ft, mt, back};
+}
+async function initS4() {
+  S4.scene.background = bgTexture('#3a1250', '#16051f', '#060108', .5);
+  S4.key = keyLights(S4.scene);
+  S4.spot = new THREE.PointLight(0xfff0d0, 2.2, 0, 0); S4.scene.add(S4.spot);
+  const {ft, mt, back} = await certTextures();
+  const edge = new THREE.MeshStandardMaterial({color: 0xd9b062, metalness: 1, roughness: .25, envMap: envTex});
+  const front = new THREE.MeshPhysicalMaterial({map: ft, color: new THREE.Color(.62, .6, .64), emissiveMap: ft, emissive: new THREE.Color(1, 1, 1), emissiveIntensity: .32, metalnessMap: mt, roughnessMap: mt, metalness: 1, roughness: 1, envMap: envTex, clearcoat: .12, clearcoatRoughness: .35, envMapIntensity: .5});
+  const backM = new THREE.MeshPhysicalMaterial({map: back, metalness: 0, roughness: .35, envMap: envTex, envMapIntensity: .8, clearcoat: .8, clearcoatRoughness: .2});
+  const geo = new THREE.BoxGeometry(900, 586, 10);
+  S4.card = new THREE.Mesh(geo, [edge, edge, edge, edge, front, backM]);
+  S4.scene.add(S4.card);
+  S4.flakes = bokehField(260, [-900, 900, -1400, 1400, -1500, 900], 31); S4.scene.add(S4.flakes);
+  S4.w1 = splitWord($('c-h1')); S4.w2 = splitWord($('c-h2'));
+}
+function renderS4(t) {
+  const lt = t - S4.t0;
+  const inK = P(lt, 0, 1.0, E.out5);
+  const flip = P(lt, 1.45, 2.15, E.io);
+  const c = S4.card;
+  c.position.set(0, L(-1500, 20, inK) + Math.sin(lt * 1.6) * 14, L(-600, 0, inK));
+  c.rotation.set(L(.9, 0, inK) + Math.sin(lt * 1.1) * .07, L(Math.PI * 3, Math.PI, inK) + flip * Math.PI + Math.sin(lt * .9) * .22, L(-.4, 0, inK) + Math.sin(lt * .7) * .04);
+  c.scale.setScalar(.92);
+  S4.spot.position.set(L(-900, 900, P(lt, 1.6, 3.6, E.io)), 500, 900);
+  driftBokeh(S4.flakes, t, 40);
+  camera.position.set(0, 0, D0); camera.lookAt(0, 0, 0);
+  renderer.render(S4.scene, camera);
+  rv($('c-eye'), t, S4.t0 + .2, 999, {dy: 14});
+  letters(S4.w1, t, S4.t0 + .3, {stag: .035});
+  letters(S4.w2, t, S4.t0 + .55, {stag: .03});
+  const chips = $('c-chips').children; [...chips].forEach((ch, i) => rv(ch, t, S4.t0 + 2.2 + i * .15, 999, {dy: 20, s0: .9}));
+}
+
+// ================= SCENE 5: cities =================
+const S5 = {scene: new THREE.Scene(), t0: 17.5};
+const CITIES = [['Астана', '2'], ['Алматы', '2'], ['Караганда', '1'], ['Павлодар', '1'], ['Семей', '1'], ['Экибастуз', '1'], ['Жезказган', '1']];
+function initS5() {
+  S5.scene.background = bgTexture('#2c0c3c', '#12041a', '#060108', .3);
+  S5.bokeh = bokehField(420, [-1400, 1400, -2000, 2000, -3000, 800], 57); S5.scene.add(S5.bokeh);
+  const box = $('s-cities');
+  CITIES.forEach(([n, c], i) => { const d = document.createElement('div'); d.className = 'city'; d.style.top = (930 + i * 78) + 'px'; d.innerHTML = `${n}<small>${c === '2' ? '2 салона' : '1 салон'}</small>`; box.appendChild(d); });
+}
+function renderS5(t) {
+  const lt = t - S5.t0; driftBokeh(S5.bokeh, t, 40);
+  camera.position.set(Math.sin(lt * .4) * 120, 0, D0 * L(1.1, .95, P(lt, 0, 2.5, E.lin))); camera.lookAt(0, 0, 0);
+  renderer.render(S5.scene, camera);
+  const n = Math.max(1, Math.round(L(1, 9, P(t, S5.t0 + .05, S5.t0 + 1.6, E.out)))); $('s-n').textContent = n;
+  rv($('s-n'), t, S5.t0, 999, {dy: 40, s0: .85, d: .6});
+  $('s-n').style.backgroundPosition = `${L(100, 0, P(lt, 0, 2.5, E.lin))}% 0`;
+  rv($('s-l'), t, S5.t0 + .15, 999, {dy: 20});
+  rv($('s-e'), t, S5.t0 + .35, 999, {dy: 14});
+  [...$('s-cities').children].forEach((el, i) => { const a = S5.t0 + .45 + i * .15; const k = P(t, a, a + .55, E.out5);
+    el.style.opacity = k.toFixed(3); el.style.transform = `rotateX(${((1 - k) * -90).toFixed(1)}deg) translateY(${((1 - k) * 20).toFixed(1)}px)`; el.style.color = k > .98 ? '#fff' : '#ecc978'; });
+}
+
+// ================= SCENE 6: finale =================
+const S6 = {scene: new THREE.Scene(), t0: 20};
+function petalTex() {
+  const c = document.createElement('canvas'); c.width = 128; c.height = 192; const x = c.getContext('2d');
+  const g = x.createRadialGradient(64, 120, 5, 64, 100, 100); g.addColorStop(0, '#fff0f2'); g.addColorStop(.45, '#f3b7c4'); g.addColorStop(1, '#d9788f');
+  x.fillStyle = g; x.beginPath(); x.moveTo(64, 186); x.bezierCurveTo(-10, 130, 8, 20, 64, 6); x.bezierCurveTo(120, 20, 138, 130, 64, 186); x.fill();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function initS6() {
+  S6.scene.background = bgTexture('#2c0c3c', '#12041a', '#050107', .32);
+  S6.key = keyLights(S6.scene);
+  S6.med = makeMedallion(); S6.med.position.set(0, 430, 0); S6.scene.add(S6.med);
+  S6.bokeh = bokehField(380, [-1400, 1400, -2000, 2000, -3000, 800], 77); S6.scene.add(S6.bokeh);
+  const n = 46; S6.petals = new THREE.InstancedMesh(new THREE.PlaneGeometry(46, 68), new THREE.MeshStandardMaterial({map: petalTex(), transparent: true, alphaTest: .05, side: THREE.DoubleSide, roughness: .55, metalness: 0}), n);
+  S6.petals.frustumCulled = false; S6.scene.add(S6.petals); S6.n = n; S6.dummy = new THREE.Object3D();
+  // ink
+  S6.ctx = $('ink').getContext('2d'); S6.NW = 540; S6.NH = 960; S6.noise = valueNoise(S6.NW, S6.NH, 5.1);
+  S6.mask = Object.assign(document.createElement('canvas'), {width: S6.NW, height: S6.NH}); S6.md = S6.mask.getContext('2d').createImageData(S6.NW, S6.NH);
+  S6.edge = Object.assign(document.createElement('canvas'), {width: S6.NW, height: S6.NH}); S6.ed = S6.edge.getContext('2d').createImageData(S6.NW, S6.NH);
+  S6.txt = Object.assign(document.createElement('canvas'), {width: W, height: H}); S6.tmp = Object.assign(document.createElement('canvas'), {width: W, height: H});
+  const gold = c => { const g = c.createLinearGradient(160, 0, 920, 0); g.addColorStop(0, '#a47d2e'); g.addColorStop(.3, '#ecc978'); g.addColorStop(.5, '#fff4d2'); g.addColorStop(.7, '#ecc978'); g.addColorStop(1, '#a47d2e'); return g; };
+  S6.layers = [
+    {draw: c => { c.font = '500 132px "Cormorant Garamond"'; c.fillStyle = '#fff'; c.fillText('Тепло Таиланда', 540, 960); }, a: 20.3, b: 21.3, c: 22.25, d: 22.8},
+    {draw: c => { c.font = 'italic 400 104px "Cormorant Garamond"'; c.fillStyle = gold(c); c.fillText('себе или в подарок', 540, 1090); }, a: 20.8, b: 21.8, c: 22.3, d: 22.85},
+    {draw: c => { c.font = '500 210px "Cormorant Garamond"'; c.letterSpacing = '6px'; c.fillStyle = gold(c); c.fillText('imbir.kz', 540, 1060); c.letterSpacing = '0px'; }, a: 22.6, b: 23.7, c: 99, d: 100},
+  ];
+}
+function valueNoise(Wn, Hn, seed) {
+  const out = new Float32Array(Wn * Hn);
+  for (const [cell, amp] of [[34, .5], [15, .27], [7, .15], [3, .08]]) { const gw = Math.ceil(Wn / cell) + 2; const g = new Float32Array(gw * (Math.ceil(Hn / cell) + 2)); for (let i = 0; i < g.length; i++) g[i] = rnd(i * 1.37 + seed + cell * 7.1);
+    for (let y = 0; y < Hn; y++) { const fy = y / cell, iy = fy | 0, ty = fy - iy, sy = ty * ty * (3 - 2 * ty); for (let x = 0; x < Wn; x++) { const fx = x / cell, ix = fx | 0, tx = fx - ix, sx = tx * tx * (3 - 2 * tx);
+      const a = g[iy * gw + ix], b = g[iy * gw + ix + 1], c = g[(iy + 1) * gw + ix], d = g[(iy + 1) * gw + ix + 1]; out[y * Wn + x] += amp * (a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy); } } }
+  let mn = 1e9, mx = -1e9; for (const v of out) { mn = Math.min(mn, v); mx = Math.max(mx, v); } for (let i = 0; i < out.length; i++) out[i] = (out[i] - mn) / (mx - mn); return out;
+}
+function inkPass(k) {
+  const th = 1.08 - k * 1.16, n = S6.noise, md = S6.md.data, ed = S6.ed.data;
+  for (let i = 0, j = 0; i < n.length; i++, j += 4) { const v = n[i] - th; md[j + 3] = v <= 0 ? 0 : v >= .035 ? 255 : v / .035 * 255;
+    const e = v > -.01 && v < .07 ? 1 - Math.abs(v - .025) / .045 : 0; ed[j] = 255; ed[j + 1] = 214; ed[j + 2] = 140; ed[j + 3] = e > 0 ? Math.min(255, e * 255) : 0; }
+  S6.mask.getContext('2d').putImageData(S6.md, 0, 0); S6.edge.getContext('2d').putImageData(S6.ed, 0, 0);
+}
+function renderS6(t) {
+  const lt = t - S6.t0;
+  const mi = P(lt, 0, .9, E.out5); setOpacity(S6.med, mi);
+  S6.med.rotation.y = L(-Math.PI, 0, mi) + Math.sin(lt * .8) * .35; S6.med.rotation.x = Math.sin(lt * .6) * .08; S6.med.scale.setScalar(L(.6, .72, mi));
+  S6.key.position.set(Math.sin(lt * 1.1) * 1500, 1000, 1400);
+  const d = S6.dummy;
+  for (let i = 0; i < S6.n; i++) { const sp = 150 + rnd(i + 3) * 170; const y0 = 1300 + rnd(i + 5) * 2600; let y = y0 - (lt + 1.5) * sp; y = ((y + 1500) % 3000 + 3000) % 3000 - 1500;
+    d.position.set(L(-800, 800, rnd(i + 7)) + Math.sin(lt * .8 + i) * 90, y, L(-900, 700, rnd(i + 9)));
+    d.rotation.set(lt * (.6 + rnd(i + 11)) + i, lt * (.9 + rnd(i + 13)) + i * 2, lt * .4 + i); d.scale.setScalar((.8 + rnd(i + 15) * .8) * P(lt, 0, .8)); d.updateMatrix(); S6.petals.setMatrixAt(i, d.matrix); }
+  S6.petals.instanceMatrix.needsUpdate = true;
+  driftBokeh(S6.bokeh, t, 40);
+  camera.position.set(0, 0, D0 * L(1.06, 1, P(lt, 0, 5, E.out))); camera.lookAt(0, 0, 0);
+  renderer.render(S6.scene, camera);
+  // gold ink text
+  const ctx = S6.ctx; ctx.clearRect(0, 0, W, H);
+  for (const Ly of S6.layers) { const kin = P(t, Ly.a, Ly.b, E.sine), kout = P(t, Ly.c, Ly.d, E.sine); const k = kin * (1 - kout); if (k <= 0) continue;
+    const tc = S6.txt.getContext('2d'); tc.clearRect(0, 0, W, H); tc.textAlign = 'center'; tc.textBaseline = 'middle'; Ly.draw(tc);
+    inkPass(k);
+    const m = S6.tmp.getContext('2d'); m.globalCompositeOperation = 'source-over'; m.clearRect(0, 0, W, H); m.drawImage(S6.txt, 0, 0); m.globalCompositeOperation = 'destination-in'; m.drawImage(S6.mask, 0, 0, W, H); m.globalCompositeOperation = 'source-over';
+    ctx.drawImage(S6.tmp, 0, 0);
+    if (k < 1) { m.clearRect(0, 0, W, H); m.drawImage(S6.edge, 0, 0, W, H); m.globalCompositeOperation = 'destination-in'; m.drawImage(S6.txt, 0, 0); m.globalCompositeOperation = 'source-over';
+      ctx.globalCompositeOperation = 'lighter'; ctx.filter = 'blur(3px)'; ctx.drawImage(S6.tmp, 0, 0); ctx.filter = 'none'; ctx.drawImage(S6.tmp, 0, 0); ctx.globalCompositeOperation = 'source-over'; }
+  }
+  const sh = P(t, 23.9, 25, E.io);
+  if (sh > 0 && sh < 1) { ctx.save(); ctx.globalCompositeOperation = 'source-atop'; const x = L(100, 980, sh); const g = ctx.createLinearGradient(x - 120, 0, x + 120, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,250,235,.8)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(0, 920, W, 280); ctx.restore(); }
+  rv($('f-btn'), t, 23.4, 999, {dy: 24, pre: 'translateX(-50%)', s0: .9});
+  rv($('f-ph'), t, 23.7, 999, {dy: 14});
+}
+
+// ================= global =================
+const SCN = [[0, 3.75, 1, renderS1], [3.75, 7.5, 2, renderS2], [7.5, 13.75, 3, renderS3], [13.75, 17.5, 4, renderS4], [17.5, 20, 5, renderS5], [20, 25.01, 6, renderS6]];
+const CUTS = [3.75, 7.5, 13.75, 17.5], BIG = [1.95, 20];
+const grainTiles = [];
+function initGrain() { for (let k = 0; k < 6; k++) { const c = document.createElement('canvas'); c.width = 540; c.height = 960; const x = c.getContext('2d'); const d = x.createImageData(540, 960);
+  for (let i = 0; i < d.data.length; i += 4) { const v = 128 + (rnd(i * .013 + k * 91.7) - .5) * 170; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } x.putImageData(d, 0, 0); grainTiles.push(c); } }
+function overlays(t) {
+  $('grain').getContext('2d').drawImage(grainTiles[Math.floor(t * FPS) % grainTiles.length], 0, 0);
+  let fl = 0;
+  for (const c of CUTS) { const d = t - c; if (d > -.06 && d < .4) fl = Math.max(fl, d < 0 ? (d + .06) / .06 : 1 - E.out(d / .4)); }
+  for (const c of BIG) { const d = t - c; if (d > -.1 && d < .9) fl = Math.max(fl, d < 0 ? (d + .1) / .1 : 1 - E.out(d / .9)); }
+  for (let i = 1; i < 5; i++) { const d = t - (7.5 + i * 1.25); if (d > -.03 && d < .3) fl = Math.max(fl, .35 * (d < 0 ? 1 : 1 - d / .3)); }
+  $('flash').style.opacity = (fl * .85).toFixed(3);
+  const lk = Math.max(P(t, 7.5, 8.2) * (1 - P(t, 13.3, 13.75)), P(t, 13.75, 14.4) * (1 - P(t, 17, 17.5)));
+  const lx = 50 + Math.sin(t * .8) * 45, ly = 35 + Math.cos(t * .55) * 30;
+  $('leak').style.background = `radial-gradient(700px 900px at ${lx}% ${ly}%, rgba(255,150,60,.32), rgba(255,120,40,0) 70%), radial-gradient(600px 800px at ${100 - lx}% ${100 - ly}%, rgba(170,70,255,.2), rgba(0,0,0,0) 70%)`;
+  $('leak').style.opacity = (lk * (.55 + .45 * Math.sin(t * 2.1))).toFixed(3);
+}
+async function seek(t) {
+  let active = null;
+  for (const s of SCN) { const on = t >= s[0] && t < s[1]; $('L' + s[2]).style.display = on ? 'block' : 'none'; if (on) active = s; }
+  const is2d = active[2] === 2; $('c2d').style.display = is2d ? 'block' : 'none'; $('gl').style.display = is2d ? 'none' : 'block';
+  if (active[2] !== 3) $('gl').style.filter = 'none';
+  await active[3](t);
+  overlays(t);
+}
+window.seek = seek;
+window.ready = (async () => {
+  await Promise.all(['400', '500', '600'].flatMap(w => [`${w} 40px "Cormorant Garamond"`, `italic ${w} 40px "Cormorant Garamond"`, `${w} 20px Montserrat`]).map(f => document.fonts.load(f, 'Таиланд abc ₸')));
+  await document.fonts.ready;
+  iconImg = await getImg('a/icon-gold.png');
+  await initS1(); initS2(); initS3(); await initS4(); initS5(); initS6(); initGrain();
+  // warm up shaders
+  for (const s of [S1, S3, S4, S5, S6]) { camera.position.set(0, 0, D0); camera.lookAt(0, 0, 0); renderer.compile(s.scene, camera); }
+  return document.fonts.check('500 40px "Cormorant Garamond"', 'Таиланд');
+})();
+</script>
+</body>
+</html>
