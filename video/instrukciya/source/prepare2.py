@@ -6,18 +6,29 @@ VW, VH = M['viewport']['width'], M['viewport']['height']
 MAXZ = 1.32 if DEV == 'pc' else 1.0
 NF = len(M['frames']); fpath = lambda i: f"rec2_{DEV}/f/{min(max(i, 0), NF - 1):06d}.jpg"
 rl = {x['id']: x for x in M['lines']}
+DIFF = json.load(open(f'rec2_{DEV}/diffs.json'))
 
 # ---- timeline ----
 tl = []; T = 0.0; prev_sid = None
 for ln in L:
     it = dict(sid=ln['sid'], kind=ln['kind'], id=ln['id'], cap=ln['cap'], wav=ln['wav'], vdur=ln['dur'], step=ln['extra'].get('step'))
-    lead = (0.8 if ln['kind'] == 'g' else 0.5) if ln['sid'] != prev_sid else 0.0
+    lead = (0.5 if ln['kind'] == 'g' else 0.35) if ln['sid'] != prev_sid else 0.0
     it['start'] = T
     if ln['kind'] == 's':
-        r = rl[ln['id']]; it['f0'] = r['f0']; it['f1'] = r['f1']; it['lead'] = lead
+        r = rl[ln['id']]; f0 = r['f0']; f1 = r['f1']
+        # trim the static tail: keep everything up to the last activity, and at least the (new, shorter) voice
+        last = f0
+        for f in range(f0, f1):
+            fr = M['frames'][f]
+            moved = f > f0 and fr['p'] != M['frames'][f - 1]['p']
+            if DIFF[f] > 0.25 or fr['fx'] or moved: last = f
+        for c in M['cams']:
+            if f0 <= c['f'] < f1: last = max(last, min(f1 - 1, c['f'] + 32))
+        f1 = min(f1, max(last + 8, f0 + int((ln['dur'] + 0.3) * FPS + .999)))
+        it['f0'] = f0; it['f1'] = f1; it['lead'] = lead
         it['voice'] = T + lead; it['end'] = it['voice'] + (r['f1'] - r['f0']) / FPS
     else:
-        it['voice'] = T + lead + 0.1; it['end'] = it['voice'] + ln['dur'] + 0.6
+        it['voice'] = T + lead + 0.05; it['end'] = it['voice'] + ln['dur'] + 0.35
     T = it['end']; tl.append(it); prev_sid = ln['sid']
 TOTAL = T + 1.5
 
