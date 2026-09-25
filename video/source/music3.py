@@ -1,11 +1,11 @@
 import numpy as np, wave
 
 SR = 48000
-DUR = 25.0
+DUR = 30.0
 N = int(SR * DUR)
-BEAT = 60 / 96
+BEAT = 0.75
 BAR = BEAT * 4
-rng = np.random.default_rng(23)
+rng = np.random.default_rng(31)
 T = np.arange(N) / SR
 
 
@@ -120,82 +120,78 @@ pad = np.zeros((N, 2)); drums = np.zeros((N, 2)); mel = np.zeros((N, 2)); fx = n
 prog = [[50, 57, 62, 66, 69, 76], [47, 54, 59, 62, 66, 73], [43, 50, 55, 59, 62, 69], [45, 52, 57, 61, 64, 71]]
 roots = [38, 35, 31, 33]
 scales = [[62, 64, 66, 69, 71, 74, 76, 78], [59, 61, 62, 66, 69, 71, 73, 74], [59, 62, 64, 66, 67, 69, 71, 74], [57, 59, 61, 64, 66, 69, 71, 73]]
-t0 = 0.0; k = 0
-while t0 < 20:
-    notes = prog[k % 4]; length = 2 * BAR + 1.5
+def chord(notes, t0, length, att=1.2, rel=1.8, vol=1.0):
     n = int(length * SR); t = np.arange(n) / SR
-    e = np.minimum(1, t / (0.25 if t0 == 0 else 1.0)) * np.minimum(1, np.maximum(0, (length - t) / 1.5))
+    e = np.minimum(1, t / att) * np.minimum(1, np.maximum(0, (length - t) / rel))
     for j, m in enumerate(notes):
         f = midi(m); sig = np.zeros(n)
         for dt in (-.08, 0, .09):
             sig += np.sin(2 * np.pi * f * 2 ** (dt / 12) * t + rng.uniform(0, 6)) + .2 * np.sin(4 * np.pi * f * 2 ** (dt / 12) * t)
-        sig *= e * (1 + .1 * np.sin(2 * np.pi * .15 * t + j)) * (.07 if m < 48 else .045) / 3
+        sig *= e * (1 + .1 * np.sin(2 * np.pi * .15 * t + j)) * (.07 if m < 48 else .045) / 3 * vol
         place(pad, sig, t0, 1, .5 + .3 * np.sin(j * 1.7))
-    t0 += 2 * BAR; k += 1
-n = int(6 * SR); t = np.arange(n) / SR
-e = np.minimum(1, t / .05) * np.exp(-t * .3)
-for j, m in enumerate([38, 50, 57, 62, 66, 69, 74, 78]):
-    f = midi(m); sig = sum(np.sin(2 * np.pi * f * 2 ** (d / 12) * t) for d in (-.08, 0, .09)) / 3
-    place(pad, sig * e * (.12 if m < 48 else .08), 20.0, 1, .5 + .3 * np.sin(j * 1.7))
+# chord every 2 bars (6 s) until the box opens, brighter voicing after
+for i, t0 in enumerate([0.0, 4.5, 8.25]):
+    chord(prog[i % 4], t0, 5.4 if i < 2 else 6.5, att=.4 if i == 0 else 1.0)
+chord([50, 57, 62, 66, 69, 74, 78, 81], 14.25, 4.2, att=.05, rel=1.5, vol=1.25)
+chord(prog[1], 18.0, 4.5, vol=1.1)
+chord([38, 50, 57, 62, 66, 69, 74, 78], 21.75, 8.25, att=.05, rel=4.0, vol=1.35)
 
-def groove(a, b, full=True):
+def groove(a, b, dens=1.0):
     tb = a
     while tb < b - 1e-6:
         bi = int(round((tb - a) / BEAT))
-        if bi % 4 == 0 or (full and bi % 4 == 2): place(drums, kick(), tb, .6)
-        pat = [(0, 0), (320, .12), (210, .2), (320, .1)] if full else [(0, 0), (0, 0), (210, .16), (0, 0)]
-        for s16, (f0, v) in enumerate(pat):
-            if v and rng.random() < .85: place(drums, tabla(f0 * (1 + .03 * rng.normal())), tb + s16 * BEAT / 4, v, .35 + .3 * rng.random())
-        for s8 in range(2): place(drums, shaker(), tb + s8 * BEAT / 2 + .004 * rng.normal(), .07 if s8 else .045, .7)
+        if bi % 4 == 0: place(drums, kick(), tb, .5)
+        if bi % 4 == 2 and dens > .6: place(drums, kick(), tb, .32)
+        for s16, (f0, v) in enumerate([(0, 0), (320, .08), (210, .15), (320, .07)]):
+            if v and rng.random() < .75 * dens: place(drums, tabla(f0 * (1 + .03 * rng.normal())), tb + s16 * BEAT / 4, v, .35 + .3 * rng.random())
+        place(drums, shaker(), tb + BEAT / 2, .05 * dens, .7)
         tb += BEAT
-groove(3.75, 7.5, False)
-groove(7.5, 17.5, True)
-groove(17.5, 18.75, False)
-for i in range(8):
-    tt = 18.75 + i * BEAT / 4 * 1.0
-    place(drums, tabla(180 + i * 30), tt, .1 + i * .025, .3 + .05 * i)
-for a, b in [(7.5, 20.0)]:
+groove(4.5, 13.25, .8)
+for i in range(8):   # anticipation roll before the lid opens
+    place(drums, tabla(170 + i * 22), 13.25 + i * .125, .07 + i * .02, .3 + .05 * i)
+groove(15.0, 21.75, 1.0)
+for a, b in [(4.5, 13.5), (15.0, 21.75)]:
     tb = a
     while tb < b - 1e-6:
-        ci = int(tb // (2 * BAR)) % 4; f = midi(roots[ci] + 12)
+        ci = int(tb // 6) % 4; f = midi(roots[ci] + 12)
         n = int(BAR * SR); t = np.arange(n) / SR
-        y = (np.sin(2 * np.pi * f * t) + .3 * np.sin(4 * np.pi * f * t)) * np.minimum(1, t / .02) * np.exp(-t * .9)
-        place(bass, y * .17, tb, 1, .5); place(bass, y[:int(BEAT * 1.5 * SR)] * .1, tb + BEAT * 2.5, 1, .5)
-        tb += BAR
-pattern = [0, 2, 4, 3, 5, 4, 2, 1, 3, 5, 6, 4, 7, 5, 3, 2]
-tt = 3.75; i = 0
-while tt < 19.9:
-    ci = int(tt // (2 * BAR)) % 4; sc = scales[ci]
-    if rng.random() < (.55 if tt < 7.5 else .85):
-        m = sc[pattern[i % 16] % len(sc)] + (12 if (i // 16) % 2 and rng.random() < .4 else 0)
-        place(mel, pluck(midi(m)), tt + .006 * rng.normal(), .085 + .03 * rng.random(), .5 + .3 * np.sin(i * .9))
-    tt += BEAT / 2; i += 1
-for j in range(7):
-    place(mel, chime(midi([81, 83, 85, 88, 90, 93, 95][j])), 17.95 + j * .15, .045, .3 + .07 * j)
-for j, (tt, m) in enumerate([(20.6, 74), (21.3, 78), (22.6, 81), (23.4, 86), (24.1, 81)]):
-    place(mel, pluck(midi(m), 3.5), tt, .085, .4 + .1 * j)
-place(fx, impact(2.0), 0.0, .3)
-place(fx, chime(midi(93)), 0.02, .05, .6)
-place(fx, riser(1.9), 0.05, .12)
-place(fx, impact(), 1.95, .6)
-place(fx, chime(midi(86)), 1.95, .08, .4); place(fx, chime(midi(93)), 2.0, .05, .6)
-for c in [3.75, 7.5, 13.75, 17.5]: place(fx, impact(2.2), c, .4)
-for c in [8.75, 10.0, 11.25, 12.5]:
-    place(fx, whoosh(.7), c - .4, .11, .5 + .25 * np.sin(c)); place(fx, impact(1.0), c, .16)
-place(fx, whoosh(.9), 7.1, .12)
-place(fx, riser(1.8), 18.2, .16)
-place(fx, impact(5.0), 20.0, .75)
-place(fx, chime(midi(86)), 20.0, .09, .4)
-place(fx, chime(midi(90)), 22.6, .07, .6); place(fx, chime(midi(97)), 22.65, .04, .4)
+        y = (np.sin(2 * np.pi * f * t) + .3 * np.sin(4 * np.pi * f * t)) * np.minimum(1, t / .02) * np.exp(-t * .7)
+        place(bass, y * .15, tb, 1, .5); tb += BAR
+pattern = [0, 2, 4, 3, 5, 4, 2, 1]
+tt = 4.5; i = 0
+while tt < 21.7:
+    ci = int(tt // 6) % 4; sc = scales[ci]
+    if not (13.3 < tt < 14.3) and rng.random() < .8:
+        m = sc[pattern[i % 8] % len(sc)] + (12 if tt > 15 and i % 3 == 0 else 0)
+        place(mel, pluck(midi(m), 3.0), tt + .006 * rng.normal(), .09, .5 + .3 * np.sin(i * .9))
+    tt += BEAT / 2 if tt > 15 else BEAT; i += 1
+for j, (tt, m) in enumerate([(22.9, 74), (23.65, 78), (24.4, 81), (25.9, 86), (27.4, 81), (28.15, 78)]):
+    place(mel, pluck(midi(m), 3.5), tt, .085, .4 + .1 * (j % 3))
+# fx
+place(fx, chime(midi(93)), 0.05, .04, .6)
+place(fx, riser(2.2), 0.05, .10)
+place(fx, impact(), 2.25, .55); place(fx, chime(midi(86)), 2.25, .08, .4); place(fx, chime(midi(93)), 2.3, .05, .6)
+place(fx, chime(midi(90)), 3.1, .04, .5)
+place(fx, whoosh(1.0), 4.0, .10); place(fx, impact(2.0), 4.5, .28)
+for c in [6.75, 9.0]: place(fx, whoosh(1.0), c - .2, .09, .5 + .2 * np.sin(c))
+place(fx, whoosh(1.0), 10.8, .10); place(fx, impact(2.0), 11.25, .3)
+place(fx, impact(1.5), 12.25, .35)          # box lands
+place(fx, riser(1.9), 12.4, .13)
+place(fx, impact(4.0), 14.25, .7)
+for j, m in enumerate([86, 90, 93, 98, 102]): place(fx, chime(midi(m)), 14.25 + j * .09, .06, .3 + .1 * j)
+place(fx, whoosh(1.2), 14.3, .12)
+place(fx, chime(midi(90)), 16.0, .05, .6)
+place(fx, whoosh(1.0), 21.3, .1); place(fx, impact(3.0), 21.75, .45)
+place(fx, chime(midi(86)), 22.2, .07, .4); place(fx, chime(midi(93)), 22.25, .045, .6)
 dry = pad + mel + drums * .9 + bass + fx
 send = pad * .5 + mel * .9 + drums * .25 + fx * .5
 wet = np.stack([reverb(send[:, 0], 0), reverb(send[:, 1], 1)], 1)
-mix = dry + wet * .55
-fade = np.clip(T / .02, 0, 1) * np.clip((DUR - T) / .8, 0, 1) ** 1.2
+mix = dry + wet * .6
+fade = np.clip(T / .02, 0, 1) * np.clip((DUR - T) / 1.2, 0, 1) ** 1.2
 mix *= fade[:, None]
-rms = np.sqrt(np.mean(mix[int(4 * SR):int(19 * SR)] ** 2)); mix *= .12 / rms
+rms = np.sqrt(np.mean(mix[int(4 * SR):int(21 * SR)] ** 2)); mix *= .12 / rms
 mix = np.tanh(mix * 1.2) / np.tanh(1.2); mix /= np.max(np.abs(mix)) / .95
 out = (mix * 32767).astype(np.int16)
-with wave.open('music3.wav', 'wb') as w:
+with wave.open('music4.wav', 'wb') as w:
     w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes(out.tobytes())
 print('ok')

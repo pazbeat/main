@@ -1,7 +1,7 @@
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const { spawn } = require('child_process');
 const FF='/usr/local/lib/python3.11/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2';
-const FPS=30, DUR=25, TOTAL=FPS*DUR;
+const FPS=30, DUR=30, TOTAL=FPS*DUR;
 const W = +process.argv[2]||4;
 (async () => {
   const b = await chromium.launch({args:['--allow-file-access-from-files']});
@@ -10,9 +10,9 @@ const W = +process.argv[2]||4;
     const f0=w*per, f1=Math.min(TOTAL,(w+1)*per);
     const p = await b.newPage({viewport:{width:1080,height:1920}});
     p.on('pageerror', e=>console.log('ERR',e.message));
-    await p.goto('http://127.0.0.1:8123/reels.html');
+    await p.goto('http://127.0.0.1:8123/reels2.html');
     const ok = await p.evaluate(()=>window.ready); if(!ok) console.log('fonts not ok', w);
-    const ff = spawn(FF,['-loglevel','error','-y','-f','image2pipe','-framerate',String(FPS),'-c:v','mjpeg','-i','-','-c:v','libx264','-preset','medium','-crf','17','-pix_fmt','yuv420p','-r',String(FPS),`v3/seg_${w}.mp4`],{stdio:['pipe','inherit','inherit']});
+    const ff = spawn(FF,['-loglevel','error','-y','-f','image2pipe','-framerate',String(FPS),'-c:v','mjpeg','-i','-','-c:v','libx264','-preset','medium','-crf','17','-pix_fmt','yuv420p','-r',String(FPS),`v4/seg_${w}.mp4`],{stdio:['pipe','inherit','inherit']});
     for (let f=f0; f<f1; f++) {
       await p.evaluate(t=>seek(t), f/FPS);
       const buf = await p.screenshot({type:'jpeg',quality:95});
