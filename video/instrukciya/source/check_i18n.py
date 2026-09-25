@@ -1,7 +1,7 @@
 import json, difflib, re, sys
 from faster_whisper import WhisperModel
 LANG = sys.argv[1]; w = WhisperModel('small' if LANG == 'en' else 'medium', device='cpu', compute_type='int8')
-L = json.load(open(f'lines_{LANG}.json')); seen = set(); rs = []
+L = json.load(open(sys.argv[2] if len(sys.argv) > 2 else f'lines_{LANG}.json')); seen = set(); rs = []
 norm = lambda s: re.sub(r'[^\w ]', '', s.lower())
 for it in L['pc'] + L['mob']:
     if it['wav'] in seen: continue
