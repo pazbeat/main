@@ -1,0 +1,141 @@
+{
+ "donk_shots": 1558,
+ "donk_still_pct": 54.8,
+ "donk_keys_pct": 85.0,
+ "donk_speed_median": 34.64999961853027,
+ "kills": 106,
+ "hs_pct": 64.2,
+ "kill_dist_median_m": 16.96,
+ "spot_to_kill_median_s": 0.375,
+ "spot_to_kill_p25_s": 0.125,
+ "weapons": {
+  "weapon_ak47": 929,
+  "weapon_m4a1": 289,
+  "weapon_m4a1_silencer": 77,
+  "weapon_glock": 49,
+  "weapon_deagle": 48,
+  "weapon_elite": 35
+ },
+ "players": {
+  "donk": {
+   "shots": 1558,
+   "still_pct": 54.8,
+   "keys_pct": 85.0
+  },
+  "magixx": {
+   "shots": 1519,
+   "still_pct": 46.5,
+   "keys_pct": 86.0
+  },
+  "tN1R": {
+   "shots": 1218,
+   "still_pct": 50.4,
+   "keys_pct": 90.1
+  },
+  "zont1x": {
+   "shots": 1129,
+   "still_pct": 64.7,
+   "keys_pct": 60.0
+  },
+  "sh1ro": {
+   "shots": 783,
+   "still_pct": 51.5,
+   "keys_pct": 76.0
+  },
+  "luchov": {
+   "shots": 620,
+   "still_pct": 56.0,
+   "keys_pct": 78.2
+  },
+  "HUASOPEEK": {
+   "shots": 613,
+   "still_pct": 45.2,
+   "keys_pct": 88.1
+  },
+  "dgt": {
+   "shots": 505,
+   "still_pct": 58.6,
+   "keys_pct": 79.8
+  },
+  "karrigan": {
+   "shots": 358,
+   "still_pct": 41.9,
+   "keys_pct": 96.6
+  },
+  "kyousuke": {
+   "shots": 357,
+   "still_pct": 56.6,
+   "keys_pct": 82.6
+  },
+  "NiKo": {
+   "shots": 344,
+   "still_pct": 74.4,
+   "keys_pct": 84.9
+  },
+  "HeavyGod": {
+   "shots": 338,
+   "still_pct": 50.6,
+   "keys_pct": 84.0
+  },
+  "MAJ3R": {
+   "shots": 337,
+   "still_pct": 55.8,
+   "keys_pct": 54.6
+  },
+  "MATYS": {
+   "shots": 328,
+   "still_pct": 39.9,
+   "keys_pct": 84.5
+  },
+  "huNter-": {
+   "shots": 299,
+   "still_pct": 49.5,
+   "keys_pct": 70.9
+  },
+  "XANTARES": {
+   "shots": 296,
+   "still_pct": 63.2,
+   "keys_pct": 74.3
+  },
+  "NertZ": {
+   "shots": 290,
+   "still_pct": 46.9,
+   "keys_pct": 91.0
+  },
+  "Wicadia": {
+   "shots": 286,
+   "still_pct": 53.1,
+   "keys_pct": 80.8
+  },
+  "max": {
+   "shots": 261,
+   "still_pct": 54.8,
+   "keys_pct": 75.5
+  },
+  "TeSeS": {
+   "shots": 240,
+   "still_pct": 43.8,
+   "keys_pct": 88.8
+  },
+  "soulfly": {
+   "shots": 198,
+   "still_pct": 47.5,
+   "keys_pct": 78.8
+  },
+  "m0NESY": {
+   "shots": 172,
+   "still_pct": 50.6,
+   "keys_pct": 85.5
+  },
+  "iM": {
+   "shots": 154,
+   "still_pct": 49.4,
+   "keys_pct": 83.1
+  },
+  "SunPayus": {
+   "shots": 154,
+   "still_pct": 63.6,
+   "keys_pct": 61.7
+  }
+ }
+}

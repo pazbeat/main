@@ -1,0 +1,72 @@
+{
+ "pos_1s": {
+  "model": {
+   "median_m": 1.0,
+   "mean_m": 1.33
+  },
+  "model_donk_only": {
+   "median_m": 1.09,
+   "mean_m": 1.41
+  },
+  "const_vel": {
+   "median_m": 1.46,
+   "mean_m": 1.89
+  },
+  "stay": {
+   "median_m": 2.23,
+   "mean_m": 2.51
+  }
+ },
+ "pos_2s": {
+  "model": {
+   "median_m": 2.07,
+   "mean_m": 2.67
+  },
+  "model_donk_only": {
+   "median_m": 2.2,
+   "mean_m": 2.81
+  },
+  "const_vel": {
+   "median_m": 3.56,
+   "mean_m": 4.31
+  },
+  "stay": {
+   "median_m": 3.63,
+   "mean_m": 4.41
+  }
+ },
+ "yaw_0_5s": {
+  "model": {
+   "median_deg": 3.0,
+   "mean_deg": 14.6
+  },
+  "keep": {
+   "median_deg": 3.6,
+   "mean_deg": 15.5
+  },
+  "const_turn": {
+   "median_deg": 4.7,
+   "mean_deg": 26.0
+  }
+ },
+ "fire_auc": [
+  0.913,
+  0.848,
+  0.875,
+  0.886,
+  0.887
+ ],
+ "fire_auc_mean": 0.882,
+ "top_features_pos": {
+  "vx": 0.464,
+  "hX0_5": 0.118,
+  "ycos": 0.101,
+  "Y": 0.052,
+  "hX2": 0.051,
+  "X": 0.047,
+  "hX1": 0.023,
+  "wc": 0.022,
+  "Z": 0.02,
+  "tr": 0.017
+ }
+}

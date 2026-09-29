@@ -1,0 +1,164 @@
+<title>Donk Dust2 Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: a radar-screen replay first, then the scorecard, then the evidence. Single deliberate dark "tactical map" look. */
+:root{
+  --ground:#0f1520; --panel:#161e2c; --line:#26324a; --ink:#dfe6f2; --muted:#8a97ad;
+  --donk:#f2b33d; --model:#43d1c0; --naive:#e06a5a; --mate:#6f9bff; --enemy:#c65c7a;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:dark;
+}
+body{background:var(--ground);color:var(--ink);font:15px/1.55 var(--body)}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:28px 60px;display:grid;gap:36px}
+h1{font:700 clamp(34px,6vw,58px)/1 var(--display);letter-spacing:.01em;margin:0;text-wrap:balance;text-transform:uppercase}
+h1 em{font-style:normal;color:var(--donk)}
+h2{font:700 26px/1.1 var(--display);text-transform:uppercase;letter-spacing:.03em;margin:0 0 12px}
+.lede{color:var(--muted);max-width:68ch;margin:10px 0 0}
+.eyebrow{font:500 12px var(--mono);color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.replay{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:820px){.replay{grid-template-columns:1fr}}
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px}
+canvas{width:100%;height:auto;display:block;max-width:100%}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+button,select{font:500 13px var(--mono);background:var(--ground);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:7px 11px;cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--donk);outline-offset:2px}
+input[type=range]{flex:1;min-width:120px;accent-color:var(--donk)}
+.legend{display:grid;gap:8px;font-size:14px}
+.key{display:flex;gap:10px;align-items:center}.sw{width:22px;height:4px;border-radius:2px;flex:none}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.live{font:500 13px/1.7 var(--mono);color:var(--muted);border-top:1px solid var(--line);padding-top:10px;margin-top:6px;font-variant-numeric:tabular-nums}
+.live b{color:var(--ink);font-weight:500}
+.score{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:9px 12px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{font:500 12px var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+td{font:500 15px var(--mono)} tr.best td{color:var(--model)} tr.best td:first-child{font-weight:600}
+.bar{height:6px;background:var(--line);border-radius:3px;margin-top:5px;position:relative}.bar i{position:absolute;inset:0 auto 0 0;border-radius:3px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+@media (max-width:720px){.grid2{grid-template-columns:1fr}}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.fact{background:var(--panel);padding:14px 16px}.fact .n{font:700 34px/1 var(--display);color:var(--donk)}.fact .l{color:var(--muted);font-size:13px;margin-top:6px}
+.note{color:var(--muted);font-size:13.5px;max-width:75ch}
+.cmp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.cmp>div{padding:14px 16px;border-bottom:1px solid var(--line)} .cmp>div:nth-child(odd){border-right:1px solid var(--line);color:var(--muted)}
+.cmp .h{font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.1em;background:var(--panel)} .cmp .h:nth-child(2){color:var(--model)}
+@media (max-width:620px){.cmp{grid-template-columns:1fr}.cmp>div:nth-child(odd){border-right:0}}
+.heat figure{margin:0}.heat figcaption{font:500 13px var(--mono);color:var(--muted);margin-top:6px}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+<div class="wrap">
+<header>
+  <div class="eyebrow">CS2 · de_dust2 · IEM Cologne Major 2026 · 5 карт Spirit</div>
+  <h1>Как ходит <em>donk</em>: модель по демкам</h1>
+  <p class="lede">Модель учится на внутренних данных демок, а не на картинке с экрана. На входе позиция, скорость, взгляд, история движения за 2 секунды, время раунда, оружие, живые союзники и враги, которых видит его команда. На выходе прогноз: где donk будет через 1 и 2 секунды, куда повернёт прицел и выстрелит ли. Проверка идёт на матче, которого модель не видела.</p>
+</header>
+
+<section class="replay" aria-label="Реплей раунда">
+  <div class="stage">
+    <canvas id="cv" width="900" height="954" aria-label="Карта Dust2 с путём donk и прогнозом модели"></canvas>
+    <div class="ctrl">
+      <select id="rsel" aria-label="Раунд"></select>
+      <button id="play" type="button">Пауза</button>
+      <input id="scrub" type="range" min="0" max="100" value="0" aria-label="Время раунда">
+    </div>
+  </div>
+  <div class="legend">
+    <h2>Реплей: матч, которого модель не видела</h2>
+    <div class="key"><span class="sw" style="background:var(--donk)"></span>donk: реальный путь и позиция</div>
+    <div class="key"><span class="sw" style="background:var(--model)"></span>Модель: где он будет через 2 с</div>
+    <div class="key"><span class="sw" style="background:var(--naive)"></span>Наивный прогноз: «продолжит идти как шёл»</div>
+    <div class="key"><span class="dot" style="background:var(--mate)"></span>Союзники из Spirit</div>
+    <div class="key"><span class="dot" style="background:var(--enemy)"></span>Соперники</div>
+    <div class="live" id="live"></div>
+    <p class="note">Кружок с пунктиром показывает, где donk реально окажется через 2 секунды. Чем ближе к нему бирюзовая точка, тем точнее модель.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Точность прогноза</h2>
+  <div class="score"><table id="tbl"></table></div>
+  <p class="note" id="tblnote"></p>
+</section>
+
+<section>
+  <h2>Как стреляет donk</h2>
+  <div class="facts" id="facts"></div>
+  <p class="note" id="shootnote"></p>
+</section>
+
+<section class="heat">
+  <h2>Где donk проводит раунд</h2>
+  <div class="grid2"><figure><canvas id="hT" width="600" height="636"></canvas><figcaption>За террористов</figcaption></figure><figure><canvas id="hCT" width="600" height="636"></canvas><figcaption>За спецназ</figcaption></figure></div>
+</section>
+
+<section>
+  <h2>Чем это отличается от ролика</h2>
+  <div class="cmp">
+    <div class="h">В ролике</div><div class="h">Здесь</div>
+    <div>Обучение по скриншотам: модель запомнила пиксели, а не действия</div><div>Только состояние игры из демки: позиции, скорость, взгляд, нажатия</div>
+    <div>Синхронизация кадров и нажатий не сошлась</div><div>Всё берётся из одного тика демки, рассинхрона нет</div>
+    <div>Модель видела выстрелы всех 10 игроков и стреляла постоянно</div><div>Каждый пример привязан к конкретному игроку, есть признак «это donk»</div>
+    <div>Нет памяти: каждый кадр отдельно</div><div>История движения и поворота за 0,25–2 с как признаки</div>
+    <div>Проверка сразу в матчмейкинге</div><div>Проверка на отложенном матче с числами и наивной базой для сравнения</div>
+    <div>Сеть сама жмёт клавиши, камера дёргается</div><div>Модель ставит цель (точку и угол), движение и плавный поворот делает обычный код</div>
+  </div>
+</section>
+<p class="note" id="foot"></p>
+</div>
+<script>
+const D = __DATA__;
+const M = D.map, img = new Image(); img.src = D.mapimg;
+const W = 900, H = Math.round(W * M.h / M.w); const cv = document.getElementById('cv'); cv.height = H; const X = cv.getContext('2d');
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = {donk: css('--donk'), model: css('--model'), naive: css('--naive'), mate: css('--mate'), enemy: css('--enemy'), ink: css('--ink'), muted: css('--muted')};
+const px = (x, w) => (x - M.x0) / (M.x1 - M.x0) * w, py = (y, h) => (1 - (y - M.y0) / (M.y1 - M.y0)) * h;
+const sel = document.getElementById('rsel'), scrub = document.getElementById('scrub'), playB = document.getElementById('play'), live = document.getElementById('live');
+D.rounds.forEach((r, i) => { const o = document.createElement('option'); o.value = i; o.textContent = `vs ${r.match} · раунд ${r.round} · ${r.side}`; sel.appendChild(o); });
+let R = D.rounds[0], f = 0, playing = !matchMedia('(prefers-reduced-motion: reduce)').matches, last = 0;
+playB.textContent = playing ? 'Пауза' : 'Играть';
+sel.onchange = () => { R = D.rounds[+sel.value]; f = 0; scrub.max = R.frames.length - 1; draw(); };
+scrub.oninput = () => { f = +scrub.value; draw(); };
+playB.onclick = () => { playing = !playing; playB.textContent = playing ? 'Пауза' : 'Играть'; };
+scrub.max = R.frames.length - 1;
+const U = 0.0254;
+function draw() {
+  X.fillStyle = css('--panel'); X.fillRect(0, 0, W, H); if (img.complete) X.drawImage(img, 0, 0, W, H);
+  const fr = R.frames, cur = fr[Math.min(f, fr.length - 1)], t0 = fr[0][0];
+  X.lineWidth = 3; X.strokeStyle = C.donk; X.globalAlpha = .55; X.beginPath(); for (let i = 0; i <= f; i++) { const p = fr[i]; i ? X.lineTo(px(p[1], W), py(p[2], H)) : X.moveTo(px(p[1], W), py(p[2], H)); } X.stroke(); X.globalAlpha = 1;
+  for (const [x, y, m] of R.others[f] || []) { X.fillStyle = m ? C.mate : C.enemy; X.beginPath(); X.arc(px(x, W), py(y, H), 6, 0, 7); X.fill(); }
+  const fut = fr[Math.min(f + 32, fr.length - 1)];
+  const [, x, y, mx, my, nx, ny] = cur, dx = px(x, W), dy = py(y, H);
+  X.setLineDash([5, 5]); X.strokeStyle = C.ink; X.lineWidth = 2; X.beginPath(); X.arc(px(fut[1], W), py(fut[2], H), 13, 0, 7); X.stroke(); X.setLineDash([]);
+  for (const [a, b, c] of [[nx, ny, C.naive], [mx, my, C.model]]) { X.strokeStyle = c; X.lineWidth = 3; X.beginPath(); X.moveTo(dx, dy); X.lineTo(px(a, W), py(b, H)); X.stroke(); X.fillStyle = c; X.beginPath(); X.arc(px(a, W), py(b, H), 7, 0, 7); X.fill(); }
+  X.fillStyle = C.donk; X.strokeStyle = '#0f1520'; X.lineWidth = 3; X.beginPath(); X.arc(dx, dy, 10, 0, 7); X.fill(); X.stroke();
+  X.font = '600 15px "IBM Plex Mono", monospace'; X.fillStyle = C.ink; X.fillText('donk', dx + 14, dy - 12);
+  const ok = f + 32 < fr.length, em = Math.hypot(mx - fut[1], my - fut[2]) * U, en = Math.hypot(nx - fut[1], ny - fut[2]) * U;
+  live.innerHTML = `Время раунда <b>${((cur[0] - t0) / 64).toFixed(1)} с</b><br>Ошибка модели через 2 с: <b>${ok ? em.toFixed(1) + ' м' : '—'}</b><br>Ошибка наивного прогноза: <b>${ok ? en.toFixed(1) + ' м' : '—'}</b>`;
+  scrub.value = f;
+}
+function loop(ts) { if (playing && ts - last > 1000 / 16 / 1.5) { f = (f + 1) % R.frames.length; last = ts; draw(); } requestAnimationFrame(loop); }
+img.onload = () => { draw(); drawHeat(); }; requestAnimationFrame(loop);
+function drawHeat() {
+  for (const side of ['T', 'CT']) { const c = document.getElementById('h' + side), g = c.getContext('2d'), w = c.width, h = Math.round(w * M.h / M.w); c.height = h;
+    g.fillStyle = css('--panel'); g.fillRect(0, 0, w, h); g.drawImage(img, 0, 0, w, h);
+    const Hm = D.heat[side], rows = Hm.length, cols = Hm[0].length, cw = w / cols, ch = h / rows;
+    for (let r = 0; r < rows; r++) for (let q = 0; q < cols; q++) { const v = Hm[r][q]; if (v < .004) continue; g.fillStyle = `rgba(242,179,61,${Math.min(1, .15 + Math.sqrt(v) * 1.3)})`; g.fillRect(q * cw, h - (r + 1) * ch, cw + .5, ch + .5); } }
+}
+// scorecard
+const Rs = D.results, rowsT = [['Стоит на месте', 'stay'], ['Идёт как шёл (наивно)', 'const_vel'], ['Модель только на donk', 'model_donk_only'], ['Модель на всех 10 игроках + «это donk»', 'model']];
+const mx2 = Math.max(...rowsT.map(r => Rs.pos_2s[r[1]].median_m));
+let html = '<thead><tr><th>Прогноз позиции</th><th>через 1 с, медиана</th><th>через 2 с, медиана</th><th>через 2 с, среднее</th></tr></thead><tbody>';
+for (const [n, k] of rowsT) { const v = Rs.pos_2s[k].median_m; html += `<tr class="${k === 'model' ? 'best' : ''}"><td>${n}<div class="bar"><i style="width:${v / mx2 * 100}%;background:${k === 'model' ? C.model : k === 'const_vel' ? C.naive : C.muted}"></i></div></td><td>${Rs.pos_1s[k].median_m.toFixed(2)} м</td><td>${v.toFixed(2)} м</td><td>${Rs.pos_2s[k].mean_m.toFixed(2)} м</td></tr>`; }
+html += `</tbody><thead><tr><th>Поворот прицела через 0,5 с</th><th colspan="3">средняя ошибка угла</th></tr></thead><tbody>`;
+for (const [n, k] of [['Не поворачивает', 'keep'], ['Поворачивает как поворачивал', 'const_turn'], ['Модель', 'model']]) html += `<tr class="${k === 'model' ? 'best' : ''}"><td>${n}</td><td colspan="3">${Rs.yaw_0_5s[k].mean_deg.toFixed(1)}° (медиана ${Rs.yaw_0_5s[k].median_deg.toFixed(1)}°)</td></tr>`;
+html += `<tr class="best"><td>Выстрел в ближайшие 0,25 с</td><td colspan="3">ROC AUC ${Rs.fire_auc_mean.toFixed(3)} (0,5 = угадывание, 1 = идеально)</td></tr></tbody>`;
+document.getElementById('tbl').innerHTML = html;
+document.getElementById('tblnote').textContent = `Проверка «один матч отложен»: модель обучается на 4 картах и проверяется на 5-й, так 5 раз. Считаются только моменты, когда donk жив. Длина шага игрока в CS2 около 0,25 м за тик; ширина прохода на Dust2 обычно 3–6 м.`;
+const S = D.stats;
+const facts = [[S.donk_shots, 'выстрелов за 5 карт'], [S.donk_still_pct + '%', 'выстрелов почти без движения (до 40 u/s)'], [S.hs_pct + '%', 'убийств в голову из ' + S.kills], [S.kill_dist_median_m.toFixed(0) + ' м', 'типичная дистанция убийства'], [S.spot_to_kill_median_s.toFixed(2) + ' с', 'от появления врага в видимости до его смерти (медиана)']];
+document.getElementById('facts').innerHTML = facts.map(([n, l]) => `<div class="fact"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+document.getElementById('shootnote').textContent = `В ${S.donk_keys_pct}% выстрелов у donk зажата клавиша движения, при этом больше половины выстрелов сделаны почти с нулевой скоростью. Это контр-стрейф: нажать противоположную клавишу, чтобы мгновенно остановиться, и стрелять точно. Бот из ролика стрелял на ходу, отсюда промахи. «Появление в видимости» здесь означает, что врага видит кто-то из команды donk, поэтому время приблизительное.`;
+document.getElementById('foot').textContent = 'Данные: демки IEM Cologne Major 2026 (Spirit против NAVI, Aurora, 9z, G2 и Falcons на Dust2), разбор через demoparser2, модели LightGBM. Карта восстановлена по позициям игроков, без сторонних изображений.';
+</script>
