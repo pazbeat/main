@@ -12,7 +12,7 @@ public static class Nav {
         return null;
     }
     static readonly (int, int, double)[] Dirs = { (1, 0, 1), (-1, 0, 1), (0, 1, 1), (0, -1, 1), (1, 1, 1.414), (1, -1, 1.414), (-1, 1, 1.414), (-1, -1, 1.414) };
-    public static List<(int, int)>? Path((int, int) s, (int, int) g, int budget = 40000) {
+    public static List<(int, int)>? Path((int, int) s, (int, int) g, int budget = 5000) {
         if (s == g) return new() { g };
         var open = new PriorityQueue<(int, int), double>(); var came = new Dictionary<(int, int), (int, int)>(); var cost = new Dictionary<(int, int), double> { [s] = 0 };
         double H((int, int) a) => Math.Sqrt((a.Item1 - g.Item1) * (a.Item1 - g.Item1) + (a.Item2 - g.Item2) * (a.Item2 - g.Item2));

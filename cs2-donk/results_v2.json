@@ -1,0 +1,9 @@
+{
+ "intent_acc_5matches": 0.579,
+ "intent_acc_70matches": 0.596,
+ "look_within15_70matches": 0.699,
+ "look_median_err": 5.3,
+ "pitch_mae_70matches": 4.6,
+ "rows": 9620885,
+ "matches": 70
+}

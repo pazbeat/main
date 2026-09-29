@@ -9,25 +9,28 @@ namespace DonkAI;
 // A* over the demo-derived Dust2 grid gets there, and CS2's own bot AI handles gunfights.
 public class DonkPlugin : BasePlugin {
     public override string ModuleName => "DonkAI";
-    public override string ModuleVersion => "0.1.0";
+    public override string ModuleVersion => "0.2.0";
     public override string ModuleDescription => "Bot driven by a model trained on donk's Dust2 demos";
 
     GoalModel? model;
+    LookModel? look;
+    double[] lookProbs = new double[36]; float lookYaw, lookPitch = 2, fightStart = -99; bool lookValid, preAim;
     CCSPlayerController? me;
     readonly List<(float x, float y, float yaw)> hist = new();           // 16 Hz samples of the controlled bot
     float freezeEnd, lastCombat = -99, lastEnemySeen = -99, enemyYaw, stuckUntil = -99;
     bool planted, debug = true;
     int tick;
-    double[] probs = new double[9]; int choice = -1; readonly Random rng = new();
+    Brain? brain; int stuckCount;
     Vector2 goal, steer, vel; float wantSpeed, yaw, pitch; string mode = "idle";
     (float x, float y, float t) stuckRef;
     StreamWriter? log;
 
     public override void Load(bool hotReload) {
-        model = GoalModel.Load(Path.Combine(ModuleDirectory, "donk_model.json")); probs = new double[model.classes];
+        model = GoalModel.Load(Path.Combine(ModuleDirectory, "donk_model.json")); brain = new Brain(model);
+        look = LookModel.Load(Path.Combine(ModuleDirectory, "donk_look.json")); lookProbs = new double[look.classes];
         Directory.CreateDirectory(Path.Combine(ModuleDirectory, "logs"));
         RegisterListener<Listeners.OnTick>(OnTick);
-        RegisterEventHandler<EventRoundFreezeEnd>((e, i) => { freezeEnd = Server.CurrentTime; planted = false; hist.Clear(); lastCombat = -99; choice = -1; Array.Clear(probs); return HookResult.Continue; });
+        RegisterEventHandler<EventRoundFreezeEnd>((e, i) => { freezeEnd = Server.CurrentTime; planted = false; hist.Clear(); lastCombat = -99; brain?.Reset(); Array.Clear(lookProbs); lookValid = false; return HookResult.Continue; });
         RegisterEventHandler<EventBombPlanted>((e, i) => { planted = true; return HookResult.Continue; });
         AddCommand("css_donk", "Hand a bot to the donk model: css_donk [bot name]", CmdDonk);
         AddCommand("css_donk_off", "Give the bot back to the game AI", (p, i) => { me = null; i.ReplyToCommand("[DonkAI] off"); });
@@ -42,7 +45,7 @@ public class DonkPlugin : BasePlugin {
         if (me == null) { info.ReplyToCommand("[DonkAI] no bot found. Add one with bot_add_t"); return; }
         hist.Clear(); freezeEnd = Server.CurrentTime;
         log?.Dispose(); log = new StreamWriter(Path.Combine(ModuleDirectory, "logs", $"run_{DateTime.Now:yyyyMMdd_HHmmss}.csv")) { AutoFlush = true };
-        log.WriteLine("time,tr,x,y,z,yaw,goal_x,goal_y,steer_x,steer_y,want_speed,speed,mode,place");
+        log.WriteLine("time,tr,x,y,z,yaw,look_yaw,pitch,look_pitch,goal_x,goal_y,steer_x,steer_y,want_speed,speed,mode,place");
         info.ReplyToCommand($"[DonkAI] now driving {me.PlayerName} ({(me.TeamNum == 2 ? "T" : "CT")})");
         Server.PrintToChatAll($" [DonkAI] бот {me.PlayerName} теперь под управлением модели donk");
     }
@@ -77,16 +80,21 @@ public class DonkPlugin : BasePlugin {
             if (seenByMe && dist < 3500) { fight = true; enemyYaw = MathF.Atan2(dy, dx) * 180 / MathF.PI; }
             if (pp.EntitySpottedState.Spotted && dist < ed) { ed = dist; ex = dx; ey = dy; lastEnemySeen = now; }
         }
-        if (fight) lastCombat = now;
+        if (fight) { if (now - lastCombat > 1.2f) fightStart = now; lastCombat = now; }
+        preAim = !fight && ed < 1600;
 
         if (tick % 4 == 0) {                                   // 16 Hz: history + model features
             hist.Add((x, y, curYaw)); if (hist.Count > 40) hist.RemoveAt(0);
             if (tick % 8 == 0) Decide(pawn, players, team, x, y, z, curYaw, curPitch, ex, ey, ed, now);
-            log?.WriteLine(string.Join(",", now.ToString("F2"), (now - freezeEnd).ToString("F2"), x.ToString("F0"), y.ToString("F0"), z.ToString("F0"), curYaw.ToString("F0"), goal.X.ToString("F0"), goal.Y.ToString("F0"),
+            log?.WriteLine(string.Join(",", now.ToString("F2"), (now - freezeEnd).ToString("F2"), x.ToString("F0"), y.ToString("F0"), z.ToString("F0"), curYaw.ToString("F0"), lookYaw.ToString("F0"), curPitch.ToString("F1"), lookPitch.ToString("F1"), goal.X.ToString("F0"), goal.Y.ToString("F0"),
                 steer.X.ToString("F0"), steer.Y.ToString("F0"), wantSpeed.ToString("F0"), new Vector2(pawn.AbsVelocity.X, pawn.AbsVelocity.Y).Length().ToString("F0"), mode, pawn.LastPlaceName));
         }
 
-        if (now - lastCombat < 1.2f) { mode = "fight"; vel = new Vector2(pawn.AbsVelocity.X, pawn.AbsVelocity.Y); yaw = curYaw; pitch = curPitch; return; }
+        if (fight) {                                                                                  // counter-strafe: stand still while the game AI aims and shoots
+            mode = "fight"; vel = Vector2.Zero; yaw = curYaw; pitch = curPitch;
+            pawn.Teleport((Vector3?)null, (Vector3?)null, new Vector3(0, 0, pawn.AbsVelocity.Z)); return;
+        }
+        if (now - lastCombat < 1.2f) { mode = "after-fight"; vel = new Vector2(pawn.AbsVelocity.X, pawn.AbsVelocity.Y); yaw = curYaw; pitch = curPitch; return; }
 
         // legs: accelerate toward the steering point, never faster than a rifle run
         var to = steer - new Vector2(x, y); float dist2 = to.Length();
@@ -95,9 +103,10 @@ public class DonkPlugin : BasePlugin {
         float vz = pawn.AbsVelocity.Z;
         if (now < stuckUntil && MathF.Abs(vz) < 1) { vz = 300; stuckUntil = -99; }           // hop over a lip we are stuck on
         // eyes: look where we walk, or toward the last enemy when holding; turn like a human, not a snap
-        float targetYaw = vel.Length() > 60 ? MathF.Atan2(vel.Y, vel.X) * 180 / MathF.PI : (now - lastEnemySeen < 5 ? MathF.Atan2(ey, ex) * 180 / MathF.PI : yaw);
+        // crosshair: pre-aim an enemy a teammate sees nearby, otherwise hold donk's usual angle for this spot
+        float targetYaw = preAim ? MathF.Atan2(ey, ex) * 180 / MathF.PI : lookValid ? lookYaw : (vel.Length() > 60 ? MathF.Atan2(vel.Y, vel.X) * 180 / MathF.PI : yaw);
         float dyaw = Wrap(targetYaw - yaw); yaw = Wrap(yaw + Math.Clamp(dyaw * 0.18f, -9f, 9f));
-        pitch += (2f - pitch) * 0.1f;
+        pitch += ((lookValid ? lookPitch : 2f) - pitch) * 0.1f;
         pawn.Teleport(null, new Vector3(pitch, yaw, 0), new Vector3(vel.X, vel.Y, vz));
     }
 
@@ -114,32 +123,19 @@ public class DonkPlugin : BasePlugin {
             ["wc"] = WeaponClass(pawn.WeaponServices?.ActiveWeapon.Value?.DesignerName), ["mates"] = mates.Count - 1, ["enem"] = enemies, ["planted"] = planted ? 1 : 0,
             ["ex"] = ex, ["ey"] = ey, ["ed"] = ed, ["eang"] = ed < 4000 ? Wrap(MathF.Atan2(ey, ex) * 180 / MathF.PI - curYaw) : 0, ["cx"] = cx, ["cy"] = cy,
             ["is_scoped"] = pawn.IsScoped ? 1 : 0, ["isdonk"] = 1 };
-        var pr = model!.Probs(model.features.Select(n => f[n]).ToArray());
-        for (int c = 0; c < pr.Length; c++) probs[c] = probs[c] * 0.6 + pr[c] * 0.4;          // smooth over ~0.5 s so the bot commits
-        int best = Array.IndexOf(probs, probs.Max());
-        if (choice < 0) {                                                                         // round start: pick a route by its probability so rounds differ
-            double r = rng.NextDouble() * pr.Sum(), acc = 0; choice = 0;
-            for (int c = 1; c < pr.Length; c++) { acc += pr[c]; if (r <= acc) { choice = c; break; } }
-            if (choice == 0) choice = Array.IndexOf(pr, pr.Skip(1).Max());
-            for (int c = 0; c < probs.Length; c++) probs[c] = c == choice ? 0.6 : pr[c] * 0.4;
+        if (look != null) {
+            var lp = look.Probs(look.features.Select(n => f[n]).ToArray());
+            for (int c = 0; c < lp.Length; c++) lookProbs[c] = lookProbs[c] * 0.7 + lp[c] * 0.3;
+            lookYaw = (float)look.Yaw(lookProbs); lookPitch = (float)look.Pitch(look.features.Select(n => f[n]).ToArray()); lookValid = true;
         }
-        else if (probs[best] > probs[choice] + 0.08) choice = best;                              // hysteresis: switch only for a clearly better option
-        if (choice == 0) { goal = new Vector2(x, y); wantSpeed = 0; mode = "hold"; }
-        else {
-            double a = model.SectorAngle(choice) * Math.PI / 180;
-            goal = new Vector2(x + (float)(Math.Cos(a) * model.move_dist), y + (float)(Math.Sin(a) * model.move_dist));
-            wantSpeed = 215; mode = "move";
-        }
+        brain!.Decide(model!.features.Select(n => f[n]).ToArray(), new Vector2(x, y), now);
+        goal = brain.Goal; steer = brain.Steer; wantSpeed = brain.WantSpeed; mode = brain.Mode;
         float len = (goal - new Vector2(x, y)).Length();
-
-        var s = Nav.Snap(Nav.Cell(x, y).Item1, Nav.Cell(x, y).Item2); var g = Nav.Snap(Nav.Cell(goal.X, goal.Y).Item1, Nav.Cell(goal.X, goal.Y).Item2);
-        steer = goal;
-        if (s != null && g != null) { var p = Nav.Path(s.Value, g.Value); if (p != null && p.Count > 1) { var c = Nav.Center(Nav.Steer(p).Item1, Nav.Steer(p).Item2); steer = new Vector2((float)c.Item1, (float)c.Item2); } }
 
         // stuck: wanted to run but barely moved for ~0.75 s -> hop
         if (now - stuckRef.t > 0.75f) {
             float moved = MathF.Sqrt((x - stuckRef.x) * (x - stuckRef.x) + (y - stuckRef.y) * (y - stuckRef.y));
-            if (mode == "move" && moved < 25 && now - lastCombat > 1.2f) stuckUntil = now + 0.3f;
+            if (mode == "move" && moved < 25 && now - lastCombat > 1.2f) { stuckUntil = now + 0.3f; if (++stuckCount >= 2) { brain!.Stuck(now); stuckCount = 0; } } else stuckCount = 0;
             stuckRef = (x, y, now);
         }
         if (debug && tick % 128 == 0) Server.PrintToChatAll($" [DonkAI] {mode} → {pawn.LastPlaceName} ({len:F0}u за 2с)");
