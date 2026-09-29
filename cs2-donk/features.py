@@ -57,7 +57,7 @@ def build(k):
     t = t.merge(c, on=['tick', 'team_num'], how='left'); t['cx'] = (t.CX - t.X).fillna(0); t['cy'] = (t.CY - t.Y).fillna(0)
     t['eang'] = np.where(t.ed < 4000, wrap(np.degrees(np.arctan2(t.ey, t.ex)) - t.yaw), 0)
     t['match'] = k
-    t = t[t.is_alive & (t.hrid == t.rid)]
+    t['hok'] = (t.hrid == t.rid); t = t[t.is_alive]
     return t
 FEATS = ['X', 'Y', 'Z', 'vx', 'vy', 'ysin', 'ycos', 'pitch', 'hX0_5', 'hY0_5', 'hX1', 'hY1', 'hX2', 'hY2', 'hyaw0_25', 'tr', 'team_num', 'health', 'armor_value', 'wc', 'mates', 'enem', 'planted', 'ex', 'ey', 'ed', 'eang', 'cx', 'cy', 'is_scoped', 'isdonk']
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 import numpy as np, pandas as pd, lightgbm as lgb, json
 from sklearn.metrics import roc_auc_score
 from features import FEATS, MATCHES
-D = pd.read_parquet('data/features.parquet')
+D = pd.read_parquet('data/features.parquet'); D = D[D.hok]
 for c in ('is_scoped',): D[c] = D[c].astype(int)
 ok2 = (D.frid2 == D.rid) & (D.falive2 == True); ok1 = (D.frid1 == D.rid) & (D.falive1 == True)
 P = dict(objective='huber', alpha=60, learning_rate=.05, num_leaves=63, min_data_in_leaf=80, feature_fraction=.8, bagging_fraction=.8, bagging_freq=1, verbose=-1, num_threads=4)
