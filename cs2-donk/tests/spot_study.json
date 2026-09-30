@@ -1,0 +1,32 @@
+{
+ "by_band": [
+  {
+   "band": "близко <10 м",
+   "kills": 14,
+   "seen_before_shot": 0.21428571428571427,
+   "reaction_median": 0.375,
+   "shot_to_kill": 0.453125
+  },
+  {
+   "band": "средне 10–25 м",
+   "kills": 69,
+   "seen_before_shot": 0.2753623188405797,
+   "reaction_median": 0.1875,
+   "shot_to_kill": 0.296875
+  },
+  {
+   "band": "далеко >25 м",
+   "kills": 23,
+   "seen_before_shot": 0.391304347826087,
+   "reaction_median": 0.203125,
+   "shot_to_kill": 0.53125
+  }
+ ],
+ "seen_before_shot": 0.29245283018867924,
+ "never_seen": 0.5,
+ "reaction_median": 0.203125,
+ "reaction_p25": 0.1484375,
+ "kills": 106,
+ "wallbangs": 4,
+ "smoke": 20
+}

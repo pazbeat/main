@@ -11,5 +11,6 @@
   <ItemGroup>
     <None Update="donk_model.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="donk_look.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="donk_strat.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

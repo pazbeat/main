@@ -49,3 +49,18 @@ public sealed class LookModel {
         return Math.Atan2(sy, sx) * 180 / Math.PI;
     }
 }
+
+// Where the player will be in 10 s: one class per Dust2 callout zone.
+public sealed class StrategyModel {
+    public string[] features { get; set; } = [];
+    public string[] zones { get; set; } = [];
+    public float[][] targets { get; set; } = [];          // most-used spot of each zone
+    public Tree[] trees { get; set; } = [];
+    public static StrategyModel Load(string path) => JsonSerializer.Deserialize<StrategyModel>(File.ReadAllText(path))!;
+    public double[] Probs(double[] x) {
+        int k = zones.Length; var z = new double[k];
+        for (int i = 0; i < trees.Length; i++) z[i % k] += trees[i].Eval(x);
+        double m = z.Max(), s = 0; for (int c = 0; c < k; c++) { z[c] = Math.Exp(z[c] - m); s += z[c]; }
+        for (int c = 0; c < k; c++) z[c] /= s; return z;
+    }
+}

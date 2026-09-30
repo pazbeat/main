@@ -5,20 +5,25 @@ using CounterStrikeSharp.API.Modules.Commands;
 
 namespace DonkAI;
 
-// Takes over one bot on a local server: the model trained on donk's demos picks where to go,
-// A* over the demo-derived Dust2 grid gets there, and CS2's own bot AI handles gunfights.
+// Takes over one bot on a local server. Once a second a strategy model (trained on 70 pro Dust2 matches, donk flagged)
+// picks the zone to be in 10 s from now; A* over the demo-derived grid gets there; a short-term model decides when to
+// stand and hold an angle; CS2's own bot AI aims and shoots. An enemy is "in contact" as soon as any of these fire:
+// the game marks him seen by this bot, this bot fires, this bot gets hit.
 public class DonkPlugin : BasePlugin {
     public override string ModuleName => "DonkAI";
-    public override string ModuleVersion => "0.2.0";
+    public override string ModuleVersion => "0.3.0";
     public override string ModuleDescription => "Bot driven by a model trained on donk's Dust2 demos";
 
     GoalModel? model;
+    StrategyModel? strat; Brain3? brain3;
+    float lastFire = -99, lastHurt = -99; readonly Dictionary<ulong, float> teamSawAt = new(), inViewAt = new(); StreamWriter? fightLog; bool wasFight; string fightSignal = "";
     LookModel? look;
     double[] lookProbs = new double[36]; float lookYaw, lookPitch = 2, fightStart = -99; bool lookValid, preAim;
     CCSPlayerController? me;
     readonly List<(float x, float y, float yaw)> hist = new();           // 16 Hz samples of the controlled bot
     float freezeEnd, lastCombat = -99, lastEnemySeen = -99, enemyYaw, stuckUntil = -99;
     bool planted, debug = true;
+    Vector2 bombPos; float plantTime;
     int tick;
     Brain? brain; int stuckCount;
     Vector2 goal, steer, vel; float wantSpeed, yaw, pitch; string mode = "idle";
@@ -27,15 +32,20 @@ public class DonkPlugin : BasePlugin {
 
     public override void Load(bool hotReload) {
         model = GoalModel.Load(Path.Combine(ModuleDirectory, "donk_model.json")); brain = new Brain(model);
+        strat = StrategyModel.Load(Path.Combine(ModuleDirectory, "donk_strat.json")); brain3 = new Brain3(strat, model);
         look = LookModel.Load(Path.Combine(ModuleDirectory, "donk_look.json")); lookProbs = new double[look.classes];
         Directory.CreateDirectory(Path.Combine(ModuleDirectory, "logs"));
         RegisterListener<Listeners.OnTick>(OnTick);
-        RegisterEventHandler<EventRoundFreezeEnd>((e, i) => { freezeEnd = Server.CurrentTime; planted = false; hist.Clear(); lastCombat = -99; brain?.Reset(); Array.Clear(lookProbs); lookValid = false; return HookResult.Continue; });
-        RegisterEventHandler<EventBombPlanted>((e, i) => { planted = true; return HookResult.Continue; });
+        RegisterEventHandler<EventRoundFreezeEnd>((e, i) => { freezeEnd = Server.CurrentTime; planted = false; hist.Clear(); lastCombat = -99; brain?.Reset(); brain3?.Reset(); teamSawAt.Clear(); inViewAt.Clear(); Array.Clear(lookProbs); lookValid = false; return HookResult.Continue; });
+        RegisterEventHandler<EventBombPlanted>((e, i) => {
+            planted = true; plantTime = Server.CurrentTime; var o = e.Userid?.PlayerPawn.Value?.AbsOrigin;                          // the bomb lies where the planter stood
+            if (o != null) bombPos = new Vector2(o.X, o.Y); return HookResult.Continue; });
+        RegisterEventHandler<EventWeaponFire>((e, i) => { if (me != null && e.Userid?.Slot == me.Slot && !e.Weapon.Contains("knife")) { lastFire = Server.CurrentTime; } return HookResult.Continue; });
+        RegisterEventHandler<EventPlayerHurt>((e, i) => { if (me != null && e.Userid?.Slot == me.Slot && e.Attacker != null && e.Attacker.TeamNum != me.TeamNum) lastHurt = Server.CurrentTime; return HookResult.Continue; });
         AddCommand("css_donk", "Hand a bot to the donk model: css_donk [bot name]", CmdDonk);
         AddCommand("css_donk_off", "Give the bot back to the game AI", (p, i) => { me = null; i.ReplyToCommand("[DonkAI] off"); });
         AddCommand("css_donk_debug", "Toggle chat debug", (p, i) => { debug = !debug; i.ReplyToCommand($"[DonkAI] debug {debug}"); });
-        Console.WriteLine($"[DonkAI] loaded model: {model.trees.Length} trees, {model.features.Length} features");
+        Console.WriteLine($"[DonkAI] loaded models: intent {model.trees.Length} trees, strategy {strat.trees.Length} trees over {strat.zones.Length} zones");
     }
 
     void CmdDonk(CCSPlayerController? caller, CommandInfo info) {
@@ -45,7 +55,9 @@ public class DonkPlugin : BasePlugin {
         if (me == null) { info.ReplyToCommand("[DonkAI] no bot found. Add one with bot_add_t"); return; }
         hist.Clear(); freezeEnd = Server.CurrentTime;
         log?.Dispose(); log = new StreamWriter(Path.Combine(ModuleDirectory, "logs", $"run_{DateTime.Now:yyyyMMdd_HHmmss}.csv")) { AutoFlush = true };
-        log.WriteLine("time,tr,x,y,z,yaw,look_yaw,pitch,look_pitch,goal_x,goal_y,steer_x,steer_y,want_speed,speed,mode,place");
+        log.WriteLine("time,tr,x,y,z,yaw,look_yaw,pitch,look_pitch,goal_x,goal_y,steer_x,steer_y,want_speed,speed,mode,place,zone,target_zone,enemy_dist");
+        fightLog?.Dispose(); fightLog = new StreamWriter(Path.Combine(ModuleDirectory, "logs", $"fights_{DateTime.Now:yyyyMMdd_HHmmss}.csv")) { AutoFlush = true };
+        fightLog.WriteLine("time,tr,signal,enemy,dist,angle_off_view,team_saw_before_s,in_view_before_s");
         info.ReplyToCommand($"[DonkAI] now driving {me.PlayerName} ({(me.TeamNum == 2 ? "T" : "CT")})");
         Server.PrintToChatAll($" [DonkAI] бот {me.PlayerName} теперь под управлением модели donk");
     }
@@ -72,22 +84,36 @@ public class DonkPlugin : BasePlugin {
 
         // who can see whom: an enemy spotted by *this* bot means a gunfight -> leave it to the game AI
         int team = me.TeamNum; var players = Utilities.GetPlayers().Where(p => p.IsValid && p.PawnIsAlive && p.PlayerPawn.Value != null && p.PlayerPawn.Value.AbsOrigin != null).ToList();
-        bool fight = false; float ex = 0, ey = 0, ed = 4000;
+        bool fight = false; float ex = 0, ey = 0, ed = 4000; string sig = ""; CCSPlayerController? foe = null; float foeDist = 0, foeOff = 0;
         foreach (var p in players.Where(p => p.TeamNum != team && p.TeamNum >= 2)) {
             var pp = p.PlayerPawn.Value!; var o = pp.AbsOrigin!; float dx = o.X - x, dy = o.Y - y, dist = MathF.Sqrt(dx * dx + dy * dy);
+            float off = MathF.Abs(Wrap(MathF.Atan2(dy, dx) * 180 / MathF.PI - curYaw)); ulong id = (ulong)p.Slot;
             var mask = pp.EntitySpottedState.SpottedByMask; int s = me.Slot;
             bool seenByMe = s >= 0 && s / 32 < mask.Length && (mask[s / 32] & (1u << (s % 32))) != 0;
-            if (seenByMe && dist < 3500) { fight = true; enemyYaw = MathF.Atan2(dy, dx) * 180 / MathF.PI; }
-            if (pp.EntitySpottedState.Spotted && dist < ed) { ed = dist; ex = dx; ey = dy; lastEnemySeen = now; }
+            bool teamSees = pp.EntitySpottedState.Spotted;
+            if (teamSees) { teamSawAt.TryAdd(id, now); } else teamSawAt.Remove(id);
+            if (teamSees && off < 60 && dist < 2500) inViewAt.TryAdd(id, now); else inViewAt.Remove(id);
+            if (seenByMe && dist < 3500) { fight = true; sig = "seen"; foe = p; foeDist = dist; foeOff = off; enemyYaw = MathF.Atan2(dy, dx) * 180 / MathF.PI; }
+            if (teamSees && dist < ed) { ed = dist; ex = dx; ey = dy; lastEnemySeen = now; if (foe == null) { foeDist = dist; foeOff = off; } }
         }
-        if (fight) { if (now - lastCombat > 1.2f) fightStart = now; lastCombat = now; }
+        if (!fight && now - lastFire < 0.6f) { fight = true; sig = "bot_fired"; }                  // the game AI already saw someone and shoots
+        if (!fight && now - lastHurt < 0.8f) { fight = true; sig = "got_hit"; }
+        if (fight) {
+            if (now - lastCombat > 1.2f) fightStart = now; lastCombat = now;
+            if (!wasFight && fightLog != null) {                                                       // one line per engagement: which signal came first and how early the team saw him
+                ulong fid = foe != null ? (ulong)foe.Slot : ulong.MaxValue;
+                string saw = teamSawAt.TryGetValue(fid, out var t1) ? (now - t1).ToString("F2") : "", view = inViewAt.TryGetValue(fid, out var t2) ? (now - t2).ToString("F2") : "";
+                fightLog.WriteLine(string.Join(",", now.ToString("F2"), (now - freezeEnd).ToString("F2"), sig, foe?.PlayerName ?? "", foeDist.ToString("F0"), foeOff.ToString("F0"), saw, view));
+            }
+        }
+        wasFight = fight;
         preAim = !fight && ed < 1600;
 
         if (tick % 4 == 0) {                                   // 16 Hz: history + model features
             hist.Add((x, y, curYaw)); if (hist.Count > 40) hist.RemoveAt(0);
             if (tick % 8 == 0) Decide(pawn, players, team, x, y, z, curYaw, curPitch, ex, ey, ed, now);
             log?.WriteLine(string.Join(",", now.ToString("F2"), (now - freezeEnd).ToString("F2"), x.ToString("F0"), y.ToString("F0"), z.ToString("F0"), curYaw.ToString("F0"), lookYaw.ToString("F0"), curPitch.ToString("F1"), lookPitch.ToString("F1"), goal.X.ToString("F0"), goal.Y.ToString("F0"),
-                steer.X.ToString("F0"), steer.Y.ToString("F0"), wantSpeed.ToString("F0"), new Vector2(pawn.AbsVelocity.X, pawn.AbsVelocity.Y).Length().ToString("F0"), mode, pawn.LastPlaceName));
+                steer.X.ToString("F0"), steer.Y.ToString("F0"), wantSpeed.ToString("F0"), new Vector2(pawn.AbsVelocity.X, pawn.AbsVelocity.Y).Length().ToString("F0"), mode, pawn.LastPlaceName, brain3?.CurrentZone ?? "", brain3?.TargetZone ?? "", ed.ToString("F0")));
         }
 
         if (fight) {                                                                                  // counter-strafe: stand still while the game AI aims and shoots
@@ -98,7 +124,8 @@ public class DonkPlugin : BasePlugin {
 
         // legs: accelerate toward the steering point, never faster than a rifle run
         var to = steer - new Vector2(x, y); float dist2 = to.Length();
-        var desired = dist2 > 8 && wantSpeed > 1 ? Vector2.Normalize(to) * MathF.Min(wantSpeed, 245) : Vector2.Zero;
+        float cap = preAim && ed < 1200 ? 130 : 245;                                             // enemy reported close ahead: walk, ready to stop
+        var desired = dist2 > 8 && wantSpeed > 1 ? Vector2.Normalize(to) * MathF.Min(wantSpeed, cap) : Vector2.Zero;
         vel = Vector2.Lerp(vel, desired, 0.22f);
         float vz = pawn.AbsVelocity.Z;
         if (now < stuckUntil && MathF.Abs(vz) < 1) { vz = 300; stuckUntil = -99; }           // hop over a lip we are stuck on
@@ -123,23 +150,25 @@ public class DonkPlugin : BasePlugin {
             ["wc"] = WeaponClass(pawn.WeaponServices?.ActiveWeapon.Value?.DesignerName), ["mates"] = mates.Count - 1, ["enem"] = enemies, ["planted"] = planted ? 1 : 0,
             ["ex"] = ex, ["ey"] = ey, ["ed"] = ed, ["eang"] = ed < 4000 ? Wrap(MathF.Atan2(ey, ex) * 180 / MathF.PI - curYaw) : 0, ["cx"] = cx, ["cy"] = cy,
             ["is_scoped"] = pawn.IsScoped ? 1 : 0, ["isdonk"] = 1 };
+        float bdx = planted ? bombPos.X - x : 0, bdy = planted ? bombPos.Y - y : 0;
+        f["bdx"] = bdx; f["bdy"] = bdy; f["bd"] = planted ? MathF.Sqrt(bdx * bdx + bdy * bdy) : 4000; f["bang"] = planted ? MathF.Atan2(bdy, bdx) * 180 / MathF.PI : -999; f["tp"] = planted ? now - plantTime : -1;
         if (look != null) {
             var lp = look.Probs(look.features.Select(n => f[n]).ToArray());
             for (int c = 0; c < lp.Length; c++) lookProbs[c] = lookProbs[c] * 0.7 + lp[c] * 0.3;
             lookYaw = (float)look.Yaw(lookProbs); lookPitch = (float)look.Pitch(look.features.Select(n => f[n]).ToArray()); lookValid = true;
         }
-        brain!.Decide(model!.features.Select(n => f[n]).ToArray(), new Vector2(x, y), now);
-        goal = brain.Goal; steer = brain.Steer; wantSpeed = brain.WantSpeed; mode = brain.Mode;
+        brain3!.Decide(strat!.features.Select(n => f[n]).ToArray(), model!.features.Select(n => f[n]).ToArray(), new Vector2(x, y), now, planted, ed);
+        goal = brain3.Goal; steer = brain3.Steer; wantSpeed = brain3.WantSpeed; mode = brain3.Mode;
         float len = (goal - new Vector2(x, y)).Length();
 
         // stuck: wanted to run but barely moved for ~0.75 s -> hop
         if (now - stuckRef.t > 0.75f) {
             float moved = MathF.Sqrt((x - stuckRef.x) * (x - stuckRef.x) + (y - stuckRef.y) * (y - stuckRef.y));
-            if (mode == "move" && moved < 25 && now - lastCombat > 1.2f) { stuckUntil = now + 0.3f; if (++stuckCount >= 2) { brain!.Stuck(now); stuckCount = 0; } } else stuckCount = 0;
+            if (mode != "hold" && moved < 25 && now - lastCombat > 1.2f) { stuckUntil = now + 0.3f; if (++stuckCount >= 2) { brain3!.Stuck(now); stuckCount = 0; } } else stuckCount = 0;
             stuckRef = (x, y, now);
         }
-        if (debug && tick % 128 == 0) Server.PrintToChatAll($" [DonkAI] {mode} → {pawn.LastPlaceName} ({len:F0}u за 2с)");
+        if (debug && tick % 128 == 0) Server.PrintToChatAll($" [DonkAI] {mode}: {brain3.CurrentZone} → {brain3.TargetZone}");
     }
 
-    public override void Unload(bool hotReload) { log?.Dispose(); }
+    public override void Unload(bool hotReload) { log?.Dispose(); fightLog?.Dispose(); }
 }

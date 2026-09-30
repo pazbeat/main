@@ -1,0 +1,65 @@
+[
+ {
+  "test": "Враг рядом (виден команде)",
+  "what": "доля «стоять»",
+  "real_without": 0.475,
+  "real_with": 0.43,
+  "model_without": 0.425,
+  "model_with": 0.412,
+  "pass": true
+ },
+ {
+  "test": "Враг рядом: идти к нему или от него",
+  "what": "движение к врагу (−1…1)",
+  "real_without": 0.0,
+  "real_with": 0.235,
+  "model_without": 0.093,
+  "model_with": 0.174,
+  "pass": true
+ },
+ {
+  "test": "Мало HP",
+  "what": "доля «стоять»",
+  "real_without": 0.497,
+  "real_with": 0.474,
+  "model_without": 0.469,
+  "model_with": 0.465,
+  "pass": true
+ },
+ {
+  "test": "Остался один (клатч)",
+  "what": "доля «стоять»",
+  "real_without": 0.465,
+  "real_with": 0.397,
+  "model_without": 0.458,
+  "model_with": 0.405,
+  "pass": true
+ },
+ {
+  "test": "CT: бомба заложена → ретейк",
+  "what": "движение к бомбе (−1…1)",
+  "real_without": -0.0,
+  "real_with": 0.101,
+  "model_without": 0.036,
+  "model_with": 0.033,
+  "pass": false
+ },
+ {
+  "test": "T: после закладки держит позицию",
+  "what": "доля «стоять»",
+  "real_without": 0.444,
+  "real_with": 0.514,
+  "model_without": 0.49,
+  "model_with": 0.507,
+  "pass": false
+ },
+ {
+  "test": "T: мало времени, бомба не заложена",
+  "what": "движение к ближайшему сайту",
+  "real_without": 0.219,
+  "real_with": 0.236,
+  "model_without": 0.203,
+  "model_with": 0.197,
+  "pass": true
+ }
+]
