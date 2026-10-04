@@ -127,12 +127,12 @@ def hunyuan2():
 
 BACKENDS = {"trellis2": trellis2, "hunyuan21": hunyuan21, "trellis": trellis, "hunyuan2": hunyuan2}
 
-names = sys.argv[1:] or list(BACKENDS)
-for name in names:
-    try:
-        print(f"{name}: {BACKENDS[name]()}")
-        break
-    except Exception as e:
-        print(f"{name} failed: {e}")
-else:
-    sys.exit("no backend produced a model")
+if __name__ == "__main__":  # importing this file must not spend GPU quota
+    for name in sys.argv[1:] or list(BACKENDS):
+        try:
+            print(f"{name}: {BACKENDS[name]()}")
+            break
+        except Exception as e:
+            print(f"{name} failed: {e}")
+    else:
+        sys.exit("no backend produced a model")
