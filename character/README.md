@@ -20,7 +20,18 @@ Rebuild: `pip install bpy==4.2.0 pillow && python3 make_textures.py && python3 b
 
 ## AI image-to-3D (`ai/`)
 
-`ai/generate.py` turns `ai/front.png` into a textured GLB using Hugging Face ZeroGPU Spaces, trying
-TRELLIS.2 → Hunyuan3D-2.1 → TRELLIS → Hunyuan3D-2 and stopping at the first one that succeeds
-(`python3 ai/generate.py trellis` runs a single backend). TRELLIS.2 and Hunyuan3D-2.1 need a valid
-`HF_TOKEN` (Hunyuan3D-2.1 needs HF PRO); TRELLIS and Hunyuan3D-2 fit the anonymous daily GPU quota.
+| File | What |
+|---|---|
+| `ai/hunyuan2_knight.glb` | AI model: Hunyuan3D-2 shape + photo-projected texture (Y-up, metres, 1.80 m, 250k tris, 3072×1024 atlas) |
+| `ai/hunyuan2_shape.glb` | Raw untextured shape from the Space (input to `texture_shape.py`) |
+| `ai/generate.py` | Image-to-3D via Hugging Face ZeroGPU Spaces: TRELLIS.2 → Hunyuan3D-2.1 → TRELLIS → Hunyuan3D-2, first success wins (`python3 ai/generate.py hunyuan2` runs one backend) |
+| `ai/texture_shape.py` | Textures an untextured shape by projecting `front.png` / `back.png` (and `side.png` on the head) with occlusion checks |
+| `ai/render_preview.py` | Preview renders in `ai/renders/`, same rig as `build_knight.py` |
+
+TRELLIS.2 and Hunyuan3D-2.1 need more GPU time than a free HF account gets (Hunyuan3D-2.1 needs HF PRO);
+on the free tier only the 40 s Hunyuan3D-2 shape call fits. The viewer (`viewer/index.html`, serve
+`character/` over HTTP) switches between the procedural and the AI model.
+
+Limits of the AI model: the back is projected from `back.png`, whose pose differs slightly from the
+front image, and surfaces neither photo sees (under the arms, inside the cloak) get the nearest
+seen colour, so expect soft patches there.
