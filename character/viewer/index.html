@@ -143,9 +143,9 @@ spinBtn.addEventListener("click", () => {
 const MODELS = {
   ai: {
     file: "knight_ai.gltf.json",
-    sub: "Image-to-3D scan of the front reference (TRELLIS.2), cleaned up and scaled.",
-    specs: [["Height", "1.80 m"], ["Triangles", "150,000"], ["Parts", "1 mesh, 1 PBR material"],
-            ["Textures", "2048² base colour + metal/rough, JPEG"], ["Source", "ai/front.png via ai/generate.py"],
+    sub: "Image-to-3D scan of the front reference (TRELLIS.2); the front, face and eyes are projected from the photo.",
+    specs: [["Height", "1.80 m"], ["Triangles", "236,904"], ["Parts", "1 mesh, 1 PBR material"],
+            ["Textures", "4096² base colour + metal/rough, JPEG"], ["Source", "ai/front.png via ai/generate.py, ai/finalize.py"],
             ["File", "ai/knight_ai.glb"]],
   },
   proc: {
@@ -250,7 +250,12 @@ function showModel(name) {
     })
     .then(gltf => {
       const model = gltf.scene;
-      model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+      const aniso = renderer.capabilities.getMaxAnisotropy();
+      model.traverse(o => {
+        if (!o.isMesh) return;
+        o.castShadow = true; o.receiveShadow = true;
+        for (const k of ["map", "metalnessMap", "roughnessMap", "normalMap"]) if (o.material[k]) o.material[k].anisotropy = aniso;
+      });
       loaded[name] = model;
       model.visible = current === name;
       scene.add(model);

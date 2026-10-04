@@ -9,7 +9,7 @@ Procedural 3D model of the medieval knight from `reference/` (front / back / sid
 | `build_knight.py` | Builds everything from code (`python3 build_knight.py --render`) |
 | `make_textures.py` | Generates textures in `textures/` (leather, quilted gambeson, chainmail, steel, shield with eagle) |
 | `renders/` | Preview renders: front, back, side, three-quarter, head (`ai_*.png`: the AI model) |
-| `ai/knight_ai.glb` | AI image-to-3D model (TRELLIS.2), cleaned up: 1.80 m, 150k tris, 2048² JPEG PBR textures |
+| `ai/knight_ai.glb` | AI image-to-3D model (TRELLIS.2) with the photo projected onto its front: 1.80 m, 237k tris, 4096² JPEG PBR textures |
 | `viewer/` | three.js turntable, switches between the AI scan and the procedural model |
 
 Contents: head with beard/hair, quilted gambeson with skirt, leather cuirass with three steel chest
@@ -29,10 +29,20 @@ TRELLIS.2 → Hunyuan3D-2.1 → TRELLIS → Hunyuan3D-2 and stopping at the firs
 
 Result (`python3 ai/generate.py` → TRELLIS.2 succeeded): `ai/trellis2_knight.glb` is the raw output
 (395k tris, 4096² textures, 1 unit tall, 22 MB). `ai/finalize.py` turns it into `ai/knight_ai.glb`:
-scales to 1.80 m with the soles on the origin and front along +Z, decimates to 150k triangles,
-downsizes textures to 2048², and repaints the crown and back of the head (unseen in `front.png`,
-so the generator left them grey and half-metallic) with the photo's dark-brown hair. It also writes
-`viewer/knight_ai.gltf.json` for the turntable.
 
-    pip install gradio_client bpy==4.2.0 pillow numpy
+- scales to 1.80 m with the soles on the origin and the front along +Z;
+- repaints the crown, back of the head and beard, which the generator leaves grey (and the hair
+  half-metallic), with the photo's hair and beard colours;
+- projects `ai/front.png` onto every texel that faces the camera and is not hidden. TRELLIS sees
+  the whole knight at low resolution, so its face has blank eyes and its buckles and shield eagle are
+  blurred; the projection gives them the photo's detail. A dense optical flow aligns the photo to the
+  model (the head sits ~13 px off), only the photo's fine detail and hue are kept and the broad
+  brightness comes from the model, so the front blends into the sides. `ai/front_mask.png` is the
+  knight cut out of the photo (rembg);
+- pads the texture islands and simplifies with gltfpack to 237k triangles (seam-aware; Blender's
+  decimate cracked the face), with quantized geometry: 10.4 MB, 4096² JPEG textures.
+
+It also writes `viewer/knight_ai.gltf.json` for the turntable.
+
+    pip install gradio_client bpy==4.2.0 numpy scipy opencv-python-headless pillow   # + Node.js for gltfpack
     HF_TOKEN=hf_... python3 ai/generate.py && python3 ai/finalize.py
