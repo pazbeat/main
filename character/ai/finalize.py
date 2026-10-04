@@ -4,7 +4,7 @@
 
 Takes trellis2_knight.glb (or the first raw *_knight.glb found), scales it to 1.80 m, stands it on
 the origin facing +Z (glTF front), decimates it and downsizes the textures, then writes
-  knight_ai.glb                    final model (WEBP textures)
+  knight_ai.glb                    final model (JPEG textures; WEBP needs a data: URI probe in three.js)
   ../viewer/knight_ai.gltf.json    the same model as embedded glTF for the turntable viewer
 """
 import argparse
@@ -129,7 +129,7 @@ fix_head()
 
 out = os.path.join(HERE, "knight_ai.glb")
 bpy.ops.export_scene.gltf(filepath=out, export_format="GLB", export_yup=True, export_apply=True,
-                          export_image_format="WEBP", export_animations=False, export_extras=False)
+                          export_image_format="JPEG", export_animations=False, export_extras=False)
 
 # GLB -> single-file glTF with the binary chunk as a data URI (what the viewer loads)
 with open(out, "rb") as f:

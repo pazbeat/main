@@ -145,7 +145,7 @@ const MODELS = {
     file: "knight_ai.gltf.json",
     sub: "Image-to-3D scan of the front reference (TRELLIS.2), cleaned up and scaled.",
     specs: [["Height", "1.80 m"], ["Triangles", "150,000"], ["Parts", "1 mesh, 1 PBR material"],
-            ["Textures", "2048² base colour + metal/rough, WEBP"], ["Source", "ai/front.png via ai/generate.py"],
+            ["Textures", "2048² base colour + metal/rough, JPEG"], ["Source", "ai/front.png via ai/generate.py"],
             ["File", "ai/knight_ai.glb"]],
   },
   proc: {
@@ -184,7 +184,7 @@ function showModel(name) {
   }, ev => {
     if (ev.total && current === name) status.textContent = `Loading model… ${Math.round(ev.loaded / ev.total * 100)}%`;
   }, err => {
-    if (current === name) status.textContent = "The model file could not be loaded. Reload the page to try again.";
+    if (current === name) status.textContent = `The model could not be loaded (${err?.message || err}). Reload the page or switch to the other model.`;
     console.error(err);
   });
 }

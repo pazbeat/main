@@ -9,7 +9,7 @@ Procedural 3D model of the medieval knight from `reference/` (front / back / sid
 | `build_knight.py` | Builds everything from code (`python3 build_knight.py --render`) |
 | `make_textures.py` | Generates textures in `textures/` (leather, quilted gambeson, chainmail, steel, shield with eagle) |
 | `renders/` | Preview renders: front, back, side, three-quarter, head (`ai_*.png`: the AI model) |
-| `ai/knight_ai.glb` | AI image-to-3D model (TRELLIS.2), cleaned up: 1.80 m, 150k tris, 2048² WEBP PBR textures |
+| `ai/knight_ai.glb` | AI image-to-3D model (TRELLIS.2), cleaned up: 1.80 m, 150k tris, 2048² JPEG PBR textures |
 | `viewer/` | three.js turntable, switches between the AI scan and the procedural model |
 
 Contents: head with beard/hair, quilted gambeson with skirt, leather cuirass with three steel chest
