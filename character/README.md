@@ -22,16 +22,17 @@ Rebuild: `pip install bpy==4.2.0 pillow && python3 make_textures.py && python3 b
 
 | File | What |
 |---|---|
-| `ai/hunyuan2_knight.glb` | AI model: Hunyuan3D-2 body + separate high-detail head, photo-baked textures (Y-up, metres, 1.80 m, 333k tris, 2 × 2048² textures) |
-| `ai/hunyuan2_shape.glb`, `ai/hunyuan2_head_shape.glb` | Raw untextured shapes from the Space: full figure from `front.png`, head from `front_head.png` |
+| `ai/hunyuan2_knight.glb` | AI model: Hunyuan3D-2 body + multi-view Hunyuan3D-2mv head, photo-baked textures (Y-up, metres, 1.80 m, 330k tris, 2 × 2048² textures) |
+| `ai/hunyuan2_shape.glb`, `ai/hunyuan2mv_head_shape.glb` | Raw untextured shapes: full figure from `front.png` (Hunyuan3D-2), head from the front/side/back head crops (Hunyuan3D-2mv) |
 | `ai/{front,side,back}_head.png` | Head crops of the reference photos, upscaled 4× with Real-ESRGAN |
 | `ai/generate.py` | Image-to-3D via Hugging Face ZeroGPU Spaces: TRELLIS.2 → Hunyuan3D-2.1 → TRELLIS → Hunyuan3D-2, first success wins (`python3 ai/generate.py hunyuan2` runs one backend) |
 | `ai/texture_shape.py` | Fits the head's face to the photo, UV-unwraps the shapes and bakes textures that blend the photos per texel (no seams); swaps the detailed head in at the neck |
 | `ai/render_preview.py` | Preview renders in `ai/renders/`, same rig as `build_knight.py` (AgX, since the photo textures carry their own lighting) |
 
 Why a separate head: in the full-body shape the face is ~5% of the height, so it comes out as a
-smooth blob with a ~100 px texture. Image-to-3D on the upscaled head crop gives real brows, eye
-sockets, nose and ears.
+smooth blob with a ~100 px texture. Image-to-3D on the upscaled head crops gives real brows, eye
+sockets, nose and ears. It has to be the multi-view model: from the front crop alone the profile
+comes out flat (no nose bridge, lips or chin), since the front view holds no depth.
 
 Face fitting: the sculpted features came out 17 px (median, up to 46 px) below the photo's, so the
 painted eyes sat above the sculpted ones, and the eyes were sculpted shut. `fit_face()` finds

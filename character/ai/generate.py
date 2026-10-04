@@ -8,7 +8,8 @@ Backends, best first; the first one that succeeds wins:
   trellis2   microsoft/TRELLIS.2        -> trellis2_knight.glb  (needs ~240 s GPU: valid HF_TOKEN)
   hunyuan21  tencent/Hunyuan3D-2.1      -> hunyuan21_knight.glb (needs 270 s GPU: HF PRO)
   trellis    trellis-community/TRELLIS  -> trellis_knight.glb   (120 s GPU)
-  hunyuan2   tencent/Hunyuan3D-2        -> hunyuan2_shape.glb + hunyuan2_head_shape.glb (2 x 40 s GPU),
+  hunyuan2   tencent/Hunyuan3D-2        -> hunyuan2_shape.glb (40 s GPU), plus
+             tencent/Hunyuan3D-2mv      -> hunyuan2mv_head_shape.glb from the head crops (40 s GPU),
                                            textured locally by texture_shape.py into hunyuan2_knight.glb
 
 HF_TOKEN (Hugging Face Read token) is optional; without a valid one the Spaces run anonymously
@@ -101,19 +102,26 @@ def trellis():
 
 def hunyuan2():
     # the Space's texture stage is broken (generation_all dies with NameError), so take the 40 s
-    # shape only, plus a second 40 s shape from an upscaled head crop (in the full-body shape the
-    # face is a featureless blob), and texture both locally from the reference photos
+    # body shape only, plus a 40 s head from the multi-view model fed the upscaled head crops (a
+    # head made from the front photo alone has a flat profile), and texture both locally
+    from PIL import Image, ImageOps
     from texture_shape import main as texture, make_head_crops
     make_head_crops()
-    c = Client("tencent/Hunyuan3D-2", token=TOKEN, verbose=False)
-    shapes = []
-    for image, name in ((front, "hunyuan2_shape.glb"), (os.path.join(HERE, "front_head.png"),
-                                                        "hunyuan2_head_shape.glb")):
-        r = c.predict(None, handle_file(image), None, None, None, None, 30, 5.0, 1234, 384, True,
-                      8000, False, api_name="/shape_generation")
-        shapes.append(save(r[0], name))
+    body = Client("tencent/Hunyuan3D-2", token=TOKEN, verbose=False).predict(
+        None, handle_file(front), None, None, None, None, 30, 5.0, 1234, 384, True, 8000, False,
+        api_name="/shape_generation")
+    body = save(body[0], "hunyuan2_shape.glb")
+    # Hunyuan's "left" view faces image-left, like side.png; the right one is its mirror image
+    crop = lambda k: os.path.join(HERE, f"{k}_head.png")
+    mirror = os.path.join(HERE, "side_head_mirror.png")
+    ImageOps.mirror(Image.open(crop("side"))).save(mirror)
+    head = Client("tencent/Hunyuan3D-2mv", token=TOKEN, verbose=False).predict(
+        None, None, handle_file(crop("front")), handle_file(crop("back")), handle_file(crop("side")),
+        handle_file(mirror), 5, 5.0, 1234, 384, True, 8000, False, api_name="/shape_generation")
+    os.remove(mirror)
+    head = save(head[0], "hunyuan2mv_head_shape.glb")
     out = os.path.join(HERE, "hunyuan2_knight.glb")
-    texture(shapes[0], out, head_path=shapes[1])
+    texture(body, out, head_path=head)
     return out
 
 
