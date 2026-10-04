@@ -156,9 +156,75 @@ const MODELS = {
             ["Arms", "Longsword, scabbard, heater shield with eagle"], ["File", "knight.glb, PBR textures embedded"]],
   },
 };
-const loaded = {};
-let current = null;
+// The artifact sandbox refuses fetch() of data: URIs and loading images from blob: URLs, which is
+// how GLTFLoader reads an embedded .gltf. So the page fetches the JSON itself, decodes the base64
+// buffer into an in-memory GLB, and decodes textures straight from their bytes.
+function base64ToBytes(b64) {
+  if (Uint8Array.fromBase64) return Uint8Array.fromBase64(b64);
+  const s = atob(b64), out = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
+  return out;
+}
+async function fetchText(file, onProgress) {
+  const res = await fetch(file);
+  if (!res.ok) throw new Error(`${file}: HTTP ${res.status}`);
+  const total = Number(res.headers.get("content-length")) || 0;
+  if (!res.body || !total) return res.text();
+  const reader = res.body.getReader(), parts = [];
+  let got = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    parts.push(value);
+    got += value.length;
+    onProgress(Math.min(got / total, 1));
+  }
+  const buf = new Uint8Array(got);
+  let o = 0;
+  for (const part of parts) { buf.set(part, o); o += part.length; }
+  return new TextDecoder().decode(buf);
+}
+async function embeddedGltfToGlb(file, onProgress) {
+  const json = JSON.parse(await fetchText(file, onProgress));
+  const uri = json.buffers[0].uri;
+  const bin = base64ToBytes(uri.slice(uri.indexOf(",") + 1));
+  delete json.buffers[0].uri;
+  const head = new TextEncoder().encode(JSON.stringify(json));
+  const jlen = (head.length + 3) & ~3, blen = (bin.length + 3) & ~3;
+  const glb = new Uint8Array(28 + jlen + blen);
+  const dv = new DataView(glb.buffer);
+  dv.setUint32(0, 0x46546c67, true); dv.setUint32(4, 2, true); dv.setUint32(8, glb.length, true);
+  dv.setUint32(12, jlen, true); dv.setUint32(16, 0x4e4f534a, true);
+  glb.set(head, 20); glb.fill(0x20, 20 + head.length, 20 + jlen);
+  dv.setUint32(20 + jlen, blen, true); dv.setUint32(24 + jlen, 0x004e4942, true);
+  glb.set(bin, 28 + jlen);
+  return glb.buffer;
+}
 const loader = new GLTFLoader();
+if (typeof createImageBitmap === "function") {
+  loader.register(parser => {
+    const bitmaps = {};
+    parser.loadImageSource = function (index) {
+      if (!bitmaps[index]) {
+        const def = parser.json.images[index];
+        bitmaps[index] = parser.getDependency("bufferView", def.bufferView)
+          .then(view => createImageBitmap(new Blob([view], { type: def.mimeType }), { premultiplyAlpha: "none", colorSpaceConversion: "none" }))
+          .then(bitmap => {
+            const t = new THREE.Texture(bitmap);
+            t.needsUpdate = true;
+            t.userData.mimeType = def.mimeType;
+            return t;
+          });
+        return bitmaps[index];
+      }
+      return bitmaps[index].then(t => t.clone());
+    };
+    return { name: "inline_image_bitmaps" };
+  });
+}
+
+const loaded = {}, loading = {};
+let current = null;
 function showModel(name) {
   const m = MODELS[name];
   current = name;
@@ -174,19 +240,27 @@ function showModel(name) {
   if (loaded[name]) { status.hidden = true; return; }
   status.hidden = false;
   status.textContent = "Loading model…";
-  loader.load(m.file, gltf => {
-    const model = gltf.scene;
-    model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-    loaded[name] = model;
-    model.visible = current === name;
-    scene.add(model);
-    if (current === name) status.hidden = true;
-  }, ev => {
-    if (ev.total && current === name) status.textContent = `Loading model… ${Math.round(ev.loaded / ev.total * 100)}%`;
-  }, err => {
-    if (current === name) status.textContent = `The model could not be loaded (${err?.message || err}). Reload the page or switch to the other model.`;
-    console.error(err);
-  });
+  if (loading[name]) return;
+  loading[name] = embeddedGltfToGlb(m.file, f => {
+    if (current === name) status.textContent = `Loading model… ${Math.round(f * 100)}%`;
+  })
+    .then(glb => {
+      if (current === name) status.textContent = "Preparing model…";
+      return loader.parseAsync(glb, "");
+    })
+    .then(gltf => {
+      const model = gltf.scene;
+      model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+      loaded[name] = model;
+      model.visible = current === name;
+      scene.add(model);
+      if (current === name) status.hidden = true;
+    })
+    .catch(err => {
+      delete loading[name];
+      if (current === name) status.textContent = `The model could not be loaded (${err?.message || err}). Reload the page or switch to the other model.`;
+      console.error(err);
+    });
 }
 document.querySelectorAll("[data-model]").forEach(b => b.addEventListener("click", () => showModel(b.dataset.model)));
 showModel("ai");
