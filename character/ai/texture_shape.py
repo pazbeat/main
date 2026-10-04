@@ -1,6 +1,7 @@
 """Texture untextured image-to-3D shapes by projecting the reference photos onto them.
 
-  pip install trimesh fast_simplification scipy shapely xatlas onnxruntime pillow "rembg[cpu]"
+  pip install trimesh fast_simplification scipy shapely xatlas onnxruntime pillow matplotlib \
+      mediapipe "rembg[cpu]"
   python3 texture_shape.py body_shape.glb [--head head_shape.glb] [out.glb]
 
 Shapes are assumed to be in the image-to-3D canonical frame (Y up, front view looking down -Z,
@@ -24,11 +25,14 @@ import urllib.request
 
 import fast_simplification
 import numpy as np
+import scipy.sparse
 import trimesh
+from matplotlib.path import Path as MplPath
 from PIL import Image
 from rembg import new_session, remove
-from scipy.ndimage import binary_closing, binary_erosion, distance_transform_edt
-from scipy.spatial import cKDTree
+from scipy.interpolate import RBFInterpolator
+from scipy.ndimage import binary_closing, binary_erosion, distance_transform_edt, grey_closing
+from scipy.spatial import Delaunay, cKDTree
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HEIGHT = 1.80
@@ -37,6 +41,8 @@ HEAD_FACES = 120_000
 BODY_TEX = 2048
 HEAD_TEX = 2048
 ESRGAN_URL = "https://huggingface.co/imgdesignart/realesrgan-x4-onnx/resolve/main/onnx/model.onnx"
+FACE_MODEL_URL = ("https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/"
+                  "float16/1/face_landmarker.task")
 _session = None
 
 
@@ -130,6 +136,142 @@ def neck_height(mesh):
                      for j in range(1, len(bins))])
     j = int(np.argmin(zmax))
     return (bins[j] + bins[j + 1]) / 2
+
+
+# ------------------------------------------------------------------ face fitting (MediaPipe landmarks)
+# eyelid loops of the MediaPipe face mesh, corner to corner; irises are points 468-477
+R_EYE = [33, 246, 161, 160, 159, 158, 157, 173, 133, 155, 154, 153, 145, 144, 163, 7]
+L_EYE = [362, 398, 384, 385, 386, 387, 388, 466, 263, 249, 390, 373, 374, 380, 381, 382]
+# on a sculpt with closed eyes the eyelid and iris points are guesses; use the rest for the warp
+ROBUST = np.array([i for i in range(468)
+                   if i not in (set(R_EYE) | set(L_EYE)) - {33, 133, 362, 263}])
+
+
+def face_landmarks(img):
+    """478 MediaPipe face landmarks (pixel x, y, relative depth) or None."""
+    import mediapipe as mp
+    from mediapipe.tasks.python import BaseOptions, vision
+    model = os.path.join(os.path.expanduser("~/.cache"), "face_landmarker.task")
+    if not os.path.exists(model):
+        os.makedirs(os.path.dirname(model), exist_ok=True)
+        urllib.request.urlretrieve(FACE_MODEL_URL, model)
+    lm = vision.FaceLandmarker.create_from_options(vision.FaceLandmarkerOptions(
+        base_options=BaseOptions(model_asset_path=model, delegate=BaseOptions.Delegate.CPU),
+        num_faces=1))
+    r = lm.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=np.ascontiguousarray(img)))
+    lm.close()
+    if not r.face_landmarks:
+        return None
+    h, w = img.shape[:2]
+    return np.array([[q.x * w, q.y * h, q.z * w] for q in r.face_landmarks[0]])
+
+
+def clay(mesh, params, shape, samples=6_000_000):
+    """Grey shaded front render of the mesh in a photo's pixel frame, plus which surface sample
+    each pixel shows, so landmarks found on the render can be lifted back onto the mesh."""
+    h, w = shape
+    pts, fid = trimesh.sample.sample_surface(mesh, samples, seed=0)
+    q = np.clip(to_pixels(uv_coords(pts, FRONT), params).astype(int), [0, 0], [w - 1, h - 1])
+    order = np.argsort(pts[:, 2])
+    idx = np.full((h, w), -1)
+    idx[q[order, 1], q[order, 0]] = order  # nearest sample wins
+    light = np.array([-0.3, 0.4, 1.0]) / np.linalg.norm([-0.3, 0.4, 1.0])
+    ok = idx >= 0
+    shade = np.zeros((h, w))
+    shade[ok] = np.clip(mesh.face_normals[fid][idx[ok]] @ light, 0, 1) * 0.8 + 0.15
+    img = (np.stack([grey_closing(shade, size=3)] * 3, -1) * 255).astype(np.uint8)
+    img[~grey_closing(ok, size=3)] = 110
+    return img, idx, pts
+
+
+def fit_face(head, params, photo_lm, shape, passes=2):
+    """Pull the sculpted features onto the photo's (the texture then lands on them), and open
+    the eyes, which image-to-3D sculpts as closed slits under the photo's open ones."""
+    sx, sy, ox, oy = params
+    v = head.vertices
+    allp = photo_lm[:468, :2]
+    c = allp.mean(0)
+    for it in range(passes + 1):
+        img, idx, pts = clay(head, params, shape)
+        g = face_landmarks(img)
+        if g is None:
+            print("face fit: no face found on the sculpt, left as is")
+            return head
+        err = np.linalg.norm(g[ROBUST, :2] - photo_lm[ROBUST, :2], axis=1)
+        print(f"face fit pass {it}: landmark offset median {np.median(err):.1f} px, max {err.max():.1f}")
+        if it == passes:
+            break
+        # surface point under each sculpt landmark
+        h, w = shape
+        G = []
+        for x, y in np.clip(np.round(g[ROBUST, :2]).astype(int), [0, 0], [w - 1, h - 1]):
+            win = idx[max(0, y - 3):y + 4, max(0, x - 3):x + 4]
+            win = win[win >= 0]
+            G.append(pts[win].mean(0) if len(win) else [np.nan] * 3)
+        G = np.array(G)
+        ok = np.isfinite(G[:, 0])
+        d = np.zeros((ok.sum(), 3))
+        d[:, 0] = (photo_lm[ROBUST, 0] - g[ROBUST, 0])[ok] / sx
+        d[:, 1] = -(photo_lm[ROBUST, 1] - g[ROBUST, 1])[ok] / sy
+        # zero displacement away from the face and on the back of the head
+        vp = to_pixels(uv_coords(v, FRONT), params)
+        hull = np.vstack([allp, g[:468, :2]])
+        far = (Delaunay(c + (hull - c) * 1.35).find_simplex(vp) < 0) | (head.vertex_normals[:, 2] < -0.2)
+        anchors = v[np.random.default_rng(0).choice(np.flatnonzero(far), 1500, replace=False)]
+        rbf = RBFInterpolator(np.vstack([G[ok], anchors]), np.vstack([d, np.zeros((len(anchors), 3))]),
+                              kernel="thin_plate_spline", smoothing=1e-2)
+        disp = rbf(v)
+        disp[far] = 0
+        v = v + disp
+        head = trimesh.Trimesh(v, head.faces, process=False)
+
+    # image-to-3D leaves thin spikes hanging from the nostrils: relax the strip between the
+    # alar bases (98/327) and the top of the upper lip (0) into a smooth membrane, its edges
+    # (nose tip above, lip below, cheeks) held fixed
+    vp = to_pixels(uv_coords(v, FRONT), params)
+    alar = photo_lm[[98, 327], :2]
+    aw = abs(alar[1, 0] - alar[0, 0])
+    top = alar[:, 1].mean() - 0.05 * aw
+    bottom = photo_lm[0, 1] - 0.1 * (photo_lm[0, 1] - photo_lm[2, 1])
+    region = (vp[:, 0] > alar[:, 0].min() - 0.1 * aw) & (vp[:, 0] < alar[:, 0].max() + 0.1 * aw) \
+        & (vp[:, 1] > top) & (vp[:, 1] < bottom) & (v[:, 2] > np.median(v[:, 2]))
+    edges = head.edges_unique
+    nbr = scipy.sparse.coo_matrix((np.ones(2 * len(edges)), (edges.ravel("F"), edges[:, ::-1].ravel("F"))),
+                                  shape=(len(v), len(v))).tocsr()
+    deg = np.asarray(nbr.sum(1)).ravel()
+    for _ in range(150):
+        v[region] = 0.5 * v[region] + 0.5 * (nbr @ v)[region] / deg[region, None]
+    head = trimesh.Trimesh(v, head.faces, process=False)
+
+    # open the eyes: finer triangles around them, then an eyeball inside each eyelid contour,
+    # centred on the iris, its front a little behind the lid margin
+    for _ in range(2):
+        vp = to_pixels(uv_coords(head.vertices, FRONT), params)
+        fc = vp[head.faces].mean(1)
+        sel = np.zeros(len(head.faces), bool)
+        for loop in (R_EYE, L_EYE):
+            lo, hi = photo_lm[loop, :2].min(0), photo_lm[loop, :2].max(0)
+            pad = (hi - lo) * 0.35
+            sel |= np.all((fc > lo - pad) & (fc < hi + pad), 1) & (head.face_normals[:, 2] > 0)
+        nv, nf = trimesh.remesh.subdivide(head.vertices, head.faces, face_index=np.flatnonzero(sel))
+        head = trimesh.Trimesh(nv, nf, process=False)
+    v = head.vertices.copy()
+    vp = to_pixels(uv_coords(v, FRONT), params)
+    front = head.vertex_normals[:, 2] > 0.2
+    irises = photo_lm[[468, 473], :2]
+    for loop in (R_EYE, L_EYE):
+        cont = photo_lm[loop, :2]
+        iris = irises[np.argmin(np.linalg.norm(irises - cont.mean(0), axis=1))]
+        width = np.linalg.norm(cont[0] - cont[8]) / sx
+        inside = MplPath(cont).contains_points(vp) & front
+        ring = MplPath(cont.mean(0) + (cont - cont.mean(0)) * 1.25).contains_points(vp) & ~inside & front
+        r = 0.55 * width
+        z_front = np.median(v[ring, 2]) - 0.035 * width
+        dx = v[inside, 0] - (iris[0] - ox) / sx
+        dy = v[inside, 1] - (oy - iris[1]) / sy
+        v[inside, 2] = z_front - r + np.sqrt(np.clip(r * r - dx * dx - dy * dy, 0, None))
+    print("face fit: eyes opened")
+    return trimesh.Trimesh(v, head.faces, process=False)
 
 
 # ------------------------------------------------------------------ fitting and projection
@@ -242,7 +384,7 @@ def zbuffer(mesh, pix, depth, res, samples=3_000_000):
 def bake(mesh, views, name, size, fill="nearest", power=4):
     """UV-unwrap the mesh and bake one texture that blends every photo per texel.
 
-    views: dicts(name, img=RGB array, mask, params, axes=[camera axes], weight). Each texel takes
+    views: dicts(name, img=RGB array, mask, params, axes=[camera axes], weight, erode). Each texel takes
     sum(w * colour) / sum(w), w = weight * cos(angle to the camera)^power, over the cameras that
     see it (z-buffer) inside the photo's mask; no seams between photos. Texels no camera sees get
     the nearest seen texel's colour ("nearest": cloak insides, armpits) or the colour from the
@@ -264,7 +406,8 @@ def bake(mesh, views, name, size, fill="nearest", power=4):
     for v in views:
         img = v["img"].astype(np.float32)
         h, w = v["mask"].shape
-        inner = binary_erosion(v["mask"], iterations=2)
+        # skip the cut-out's edge, where the backdrop halo lives (wider on upscaled crops)
+        inner = binary_erosion(v["mask"], iterations=v.get("erode", 2))
         res = 512
         k = max(h, w) / res
         for axes in v["axes"]:
@@ -340,6 +483,11 @@ def main(body_path, out, head_path=None):
                 haxes["side"] = sides(cands[j][0][0])
             print(f"head {k}: silhouette IoU {fits[j][0]:.3f}")
 
+        photo_lm = face_landmarks(crops["front"][0])
+        if photo_lm is not None:
+            head = fit_face(head, hparams["front"], photo_lm, crops["front"][1].shape)
+            neck = neck_height(head)
+
         # keep the head down to just below the neck (a clean planar cut), so it tucks into the
         # body's collar
         cut = neck - 0.015 * np.ptp(head.vertices[:, 1])
@@ -347,14 +495,14 @@ def main(body_path, out, head_path=None):
         above = head.vertices[:, 1] > neck
         textured = bake(head, [
             dict(name="front", img=crops["front"][0], mask=crops["front"][1], params=hparams["front"],
-                 axes=haxes["front"]),
+                 axes=haxes["front"], erode=6),
             # one profile photo for both sides (mirrored on the far side). Its head is turned a
             # little differently from the front photo, so around the eyes it lines up worse: keep
             # it weak, so it only wins where the front photo can't see (ears, back of the jaw)
             dict(name="side", img=crops["side"][0], mask=crops["side"][1], params=hparams["side"],
-                 axes=haxes["side"], weight=0.4),
+                 axes=haxes["side"], weight=0.25, erode=6),
             dict(name="back", img=crops["back"][0], mask=crops["back"][1], params=hparams["back"],
-                 axes=haxes["back"]),
+                 axes=haxes["back"], erode=6),
         ], "Head", HEAD_TEX, fill="facing")
 
         # head frame -> front.png pixels (the crop is 4x) -> body frame; depth scaled alike

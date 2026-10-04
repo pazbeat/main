@@ -2,7 +2,7 @@
 
   pip install gradio_client && python3 generate.py [backend ...]
   (hunyuan2 also needs: pip install trimesh fast_simplification scipy shapely xatlas onnxruntime
-   pillow "rembg[cpu]")
+   pillow matplotlib mediapipe "rembg[cpu]")
 
 Backends, best first; the first one that succeeds wins:
   trellis2   microsoft/TRELLIS.2        -> trellis2_knight.glb  (needs ~240 s GPU: valid HF_TOKEN)
