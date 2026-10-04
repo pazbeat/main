@@ -1,14 +1,15 @@
 """Realistic image-to-3D of the knight via Hugging Face Spaces (ZeroGPU).
 
   pip install gradio_client && python3 generate.py [backend ...]
-  (hunyuan2 also needs: pip install trimesh fast_simplification scipy pillow "rembg[cpu]")
+  (hunyuan2 also needs: pip install trimesh fast_simplification scipy shapely xatlas onnxruntime
+   pillow "rembg[cpu]")
 
 Backends, best first; the first one that succeeds wins:
   trellis2   microsoft/TRELLIS.2        -> trellis2_knight.glb  (needs ~240 s GPU: valid HF_TOKEN)
   hunyuan21  tencent/Hunyuan3D-2.1      -> hunyuan21_knight.glb (needs 270 s GPU: HF PRO)
   trellis    trellis-community/TRELLIS  -> trellis_knight.glb   (120 s GPU)
-  hunyuan2   tencent/Hunyuan3D-2        -> hunyuan2_shape.glb   (40 s GPU), textured locally by
-                                           texture_shape.py into hunyuan2_knight.glb
+  hunyuan2   tencent/Hunyuan3D-2        -> hunyuan2_shape.glb + hunyuan2_head_shape.glb (2 x 40 s GPU),
+                                           textured locally by texture_shape.py into hunyuan2_knight.glb
 
 HF_TOKEN (Hugging Face Read token) is optional; without a valid one the Spaces run anonymously
 with a small daily GPU quota. Even a free account was refused 120 s jobs with 170 s of quota left
@@ -45,8 +46,22 @@ def valid_token():
 TOKEN = valid_token()
 
 
+def file_path(x):
+    """gradio_client returns a path, or a path nested in dicts such as {"value": ..., "__type__": ...}."""
+    if isinstance(x, str) and os.path.isfile(x):
+        return x
+    if isinstance(x, dict):
+        for v in x.values():
+            p = file_path(v)
+            if p:
+                return p
+    return None
+
+
 def save(src, name):
-    src = src["path"] if isinstance(src, dict) else src
+    src = file_path(src)
+    if src is None:
+        raise RuntimeError(f"no file in Space output for {name}")
     out = os.path.join(HERE, name)
     shutil.copy(src, out)
     return out
@@ -86,14 +101,19 @@ def trellis():
 
 def hunyuan2():
     # the Space's texture stage is broken (generation_all dies with NameError), so take the 40 s
-    # shape only and texture it locally from the reference photos
+    # shape only, plus a second 40 s shape from an upscaled head crop (in the full-body shape the
+    # face is a featureless blob), and texture both locally from the reference photos
+    from texture_shape import main as texture, make_head_crops
+    make_head_crops()
     c = Client("tencent/Hunyuan3D-2", token=TOKEN, verbose=False)
-    r = c.predict(None, handle_file(front), None, None, None, None, 30, 5.0, 1234, 384, True, 8000,
-                  False, api_name="/shape_generation")
-    shape = save(r[0], "hunyuan2_shape.glb")
-    from texture_shape import main as texture
+    shapes = []
+    for image, name in ((front, "hunyuan2_shape.glb"), (os.path.join(HERE, "front_head.png"),
+                                                        "hunyuan2_head_shape.glb")):
+        r = c.predict(None, handle_file(image), None, None, None, None, 30, 5.0, 1234, 384, True,
+                      8000, False, api_name="/shape_generation")
+        shapes.append(save(r[0], name))
     out = os.path.join(HERE, "hunyuan2_knight.glb")
-    texture(shape, out)
+    texture(shapes[0], out, head_path=shapes[1])
     return out
 
 

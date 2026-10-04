@@ -28,7 +28,7 @@ scene.world = world
 world.use_nodes = True
 world.node_tree.nodes["Background"].inputs[0].default_value = (0.36, 0.37, 0.39, 1)
 world.node_tree.nodes["Background"].inputs[1].default_value = 0.45
-scene.view_settings.view_transform = "Standard"
+scene.view_settings.view_transform = "AgX"  # the photo textures carry their own lighting
 
 bpy.ops.mesh.primitive_plane_add(size=6)
 floor = bpy.data.materials.new("Floor")
@@ -51,14 +51,16 @@ cam_d.lens = 85
 cam = bpy.data.objects.new("Cam", cam_d)
 scene.collection.objects.link(cam)
 scene.camera = cam
-views = {"front": (0, -1), "back": (0, 1), "side": (-1, 0), "three_quarter": (-0.7, -0.75), "head": (-0.35, -1)}
+views = {"front": (0, -1), "back": (0, 1), "side": (-1, 0), "three_quarter": (-0.7, -0.75), "head": (-0.35, -1),
+         "face": (0, -1)}
 only = os.environ.get("VIEWS")
 for vname, (dx, dy) in views.items():
     if only and vname not in only.split(","):
         continue
-    target = Vector((0, 0, 0.92)) if vname != "head" else Vector((0, 0, 1.62))
-    dirv = Vector((dx, dy, 0.08 if vname != "head" else 0.02)).normalized()
-    cam.location = target + dirv * (6.4 if vname != "head" else 1.6)
+    close = vname in ("head", "face")
+    target = Vector((0, 0, 1.62)) if close else Vector((0, 0, 0.92))
+    dirv = Vector((dx, dy, 0.02 if close else 0.08)).normalized()
+    cam.location = target + dirv * (1.6 if close else 6.4)
     cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
     scene.render.filepath = os.path.join(outdir, f"{vname}.png")
     bpy.ops.render.render(write_still=True)

@@ -108,7 +108,13 @@ scene.add(key);
 const rim = new THREE.DirectionalLight(0xcfe0ff, 1.4);
 rim.position.set(1, 3, -3);
 scene.add(rim);
-scene.add(new THREE.HemisphereLight(0xdfe6ee, 0x2a2420, 0.6));
+const hemi = new THREE.HemisphereLight(0xdfe6ee, 0x2a2420, 0.6);
+scene.add(hemi);
+// soft light from the camera (and a lighter hemisphere ground colour), on for the photo-textured
+// AI model: its texture already has the photo's shading, and with only a high key light and a dark
+// ground colour the down-facing eye sockets go black
+const camFill = new THREE.DirectionalLight(0xfff6ec, 0);
+scene.add(camFill, camFill.target);
 
 const floor = new THREE.Mesh(new THREE.CircleGeometry(2.2, 64), new THREE.MeshStandardMaterial({ color: 0x1c1f23, roughness: 0.9 }));
 floor.rotation.x = -Math.PI / 2;
@@ -150,9 +156,14 @@ const MODELS = {
   },
   ai: {
     file: "../ai/hunyuan2_knight.glb",
-    sub: "Hunyuan3D-2 shape from the front image, textured by projecting the front, back and side photos.",
-    stats: [["Height", "1.80 m"], ["Triangles", "250,000"], ["Parts", "1 mesh, 1 material"],
-            ["Texture", "3072 × 1024 photo atlas"], ["File", "ai/hunyuan2_knight.glb"]],
+    camFill: 1.6,
+    hemiGround: 0x6a625a,
+    // the photo texture already has the face's own shadows; shadow-mapping the brow onto the eye
+    // sockets on top of that turns them into a black band
+    noShadow: ["Head"],
+    sub: "Hunyuan3D-2 body and a separate high-detail head, textures baked from the reference photos.",
+    stats: [["Height", "1.80 m"], ["Triangles", "324,491"], ["Parts", "2 meshes: body, head"],
+            ["Texture", "2 × 2048² baked, head from 4× upscaled crops"], ["File", "ai/hunyuan2_knight.glb"]],
   },
 };
 const loader = new GLTFLoader();
@@ -162,6 +173,8 @@ function showModel(name) {
   const m = MODELS[name];
   document.querySelectorAll("[data-model]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.model === name)));
   document.getElementById("sub").textContent = m.sub;
+  camFill.intensity = m.camFill || 0;
+  hemi.groundColor.set(m.hemiGround ?? 0x2a2420);
   document.getElementById("stats").replaceChildren(...m.stats.flatMap(([k, v]) => {
     const dt = document.createElement("dt"), dd = document.createElement("dd");
     dt.textContent = k; dd.textContent = v;
@@ -174,7 +187,10 @@ function showModel(name) {
   status.textContent = "Loading model…";
   loader.load(m.file, gltf => {
     const model = gltf.scene;
-    model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    const noShadow = new Set(m.noShadow || []);
+    model.traverse(o => {
+      if (o.isMesh) o.castShadow = o.receiveShadow = !(noShadow.has(o.name) || noShadow.has(o.parent?.name));
+    });
     loaded[name] = model;
     if (document.querySelector(`[data-model="${name}"]`).getAttribute("aria-pressed") !== "true") return;
     current = model;
@@ -210,6 +226,8 @@ renderer.setAnimationLoop(() => {
     if (tween.t >= 1) tween = null;
   }
   controls.update();
+  camFill.position.copy(camera.position);
+  camFill.target.position.copy(controls.target);
   renderer.render(scene, camera);
 });
 </script>
