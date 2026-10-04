@@ -1,6 +1,6 @@
 """Realistic image-to-3D of the knight via Hugging Face Spaces (ZeroGPU).
 
-  pip install gradio_client && python3 generate.py [backend ...]
+  pip install gradio_client && python3 generate.py [backend ...]   # then: python3 finalize.py
 
 Backends, best first; the first one that succeeds wins:
   trellis2   microsoft/TRELLIS.2        -> trellis2_knight.glb  (needs ~240 s GPU: valid HF_TOKEN)

@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Knight Turntable</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans+SC:wght@500;700&family=Alegreya+Sans:wght@400;500&display=swap">
@@ -48,7 +49,11 @@
   <div class="rail">
     <div>
       <h1>Wandering Knight</h1>
-      <p class="sub">Procedural model built from the front, back and side reference sheet.</p>
+      <p class="sub" id="sub"></p>
+    </div>
+    <div class="views" role="group" aria-label="Model">
+      <button data-model="ai" aria-pressed="true">AI scan</button>
+      <button data-model="proc" aria-pressed="false">Procedural</button>
     </div>
     <div class="views" role="group" aria-label="Camera view">
       <button id="v-front" data-view="front" aria-pressed="true">Front</button>
@@ -57,14 +62,7 @@
       <button id="v-face" data-view="face">Face</button>
       <button id="v-spin" aria-pressed="false">Turntable</button>
     </div>
-    <dl>
-      <dt>Height</dt><dd>1.80 m</dd>
-      <dt>Triangles</dt><dd>169,480</dd>
-      <dt>Parts</dt><dd>264 meshes, 19 materials</dd>
-      <dt>Armour</dt><dd>3 steel chest lames, 4-lame pauldrons, mail sleeves</dd>
-      <dt>Arms</dt><dd>Longsword, scabbard, heater shield with eagle</dd>
-      <dt>File</dt><dd>knight.glb, PBR textures embedded</dd>
-    </dl>
+    <dl id="specs"></dl>
   </div>
 </div>
 
@@ -142,17 +140,56 @@ spinBtn.addEventListener("click", () => {
   spinBtn.setAttribute("aria-pressed", String(controls.autoRotate));
 });
 
-new GLTFLoader().load("knight.gltf.json", gltf => {
-  const model = gltf.scene;
-  model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-  scene.add(model);
-  status.hidden = true;
-}, ev => {
-  if (ev.total) status.textContent = `Loading model… ${Math.round(ev.loaded / ev.total * 100)}%`;
-}, err => {
-  status.textContent = "The model file could not be loaded. Reload the page to try again.";
-  console.error(err);
-});
+const MODELS = {
+  ai: {
+    file: "knight_ai.gltf.json",
+    sub: "Image-to-3D scan of the front reference (TRELLIS.2), cleaned up and scaled.",
+    specs: [["Height", "1.80 m"], ["Triangles", "150,000"], ["Parts", "1 mesh, 1 PBR material"],
+            ["Textures", "2048² base colour + metal/rough, WEBP"], ["Source", "ai/front.png via ai/generate.py"],
+            ["File", "ai/knight_ai.glb"]],
+  },
+  proc: {
+    file: "knight.gltf.json",
+    sub: "Procedural model built from the front, back and side reference sheet.",
+    specs: [["Height", "1.80 m"], ["Triangles", "169,480"], ["Parts", "264 meshes, 19 materials"],
+            ["Armour", "3 steel chest lames, 4-lame pauldrons, mail sleeves"],
+            ["Arms", "Longsword, scabbard, heater shield with eagle"], ["File", "knight.glb, PBR textures embedded"]],
+  },
+};
+const loaded = {};
+let current = null;
+const loader = new GLTFLoader();
+function showModel(name) {
+  const m = MODELS[name];
+  current = name;
+  document.querySelectorAll("[data-model]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.model === name)));
+  document.getElementById("sub").textContent = m.sub;
+  const dl = document.getElementById("specs");
+  dl.replaceChildren(...m.specs.flatMap(([k, v]) => {
+    const dt = document.createElement("dt"), dd = document.createElement("dd");
+    dt.textContent = k; dd.textContent = v;
+    return [dt, dd];
+  }));
+  for (const [k, obj] of Object.entries(loaded)) obj.visible = k === name;
+  if (loaded[name]) { status.hidden = true; return; }
+  status.hidden = false;
+  status.textContent = "Loading model…";
+  loader.load(m.file, gltf => {
+    const model = gltf.scene;
+    model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    loaded[name] = model;
+    model.visible = current === name;
+    scene.add(model);
+    if (current === name) status.hidden = true;
+  }, ev => {
+    if (ev.total && current === name) status.textContent = `Loading model… ${Math.round(ev.loaded / ev.total * 100)}%`;
+  }, err => {
+    if (current === name) status.textContent = "The model file could not be loaded. Reload the page to try again.";
+    console.error(err);
+  });
+}
+document.querySelectorAll("[data-model]").forEach(b => b.addEventListener("click", () => showModel(b.dataset.model)));
+showModel("ai");
 
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
