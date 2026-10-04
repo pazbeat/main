@@ -41,10 +41,23 @@ photo's (thin-plate RBF, 2 passes, down to ~3 px), relaxes the spikes hanging fr
 opens the eyes: an eyeball inside each eyelid contour, centred on the photo's iris.
 
 TRELLIS.2 and Hunyuan3D-2.1 need more GPU time than a free HF account gets (Hunyuan3D-2.1 needs HF PRO);
-on the free tier the two 40 s Hunyuan3D-2 shape calls fit. The viewer (`viewer/index.html`, serve
-`character/` over HTTP) switches between the procedural and the AI model. For the AI model it adds
-a soft light from the camera and turns off shadow-mapping on the head: the photo texture already has
-the face's own shading, and doubling it turns the eye sockets into a black band.
+on the free tier the two 40 s calls (Hunyuan3D-2 body, Hunyuan3D-2mv head) fit.
+
+## Viewer (`viewer/`)
+
+`viewer/index.html` is a three.js turntable for both models (serve `character/` over HTTP and open
+`/viewer/`): AI or procedural model, camera presets (front, back, left, right, face, profile,
+turntable), texture / clay / wireframe surfaces and a movable key light. For the AI model it adds a
+soft light from the camera and turns off shadow-mapping on the head: the photo texture already has the
+face's own shading, and doubling it turns the eye sockets into a black band.
+
+It loads web copies of the models (quantized geometry, WebP textures, no decoder needed):
+
+    npx @gltf-transform/cli optimize ai/hunyuan2_knight.glb viewer/knight_ai.glb --compress quantize --texture-compress webp --simplify false
+    npx @gltf-transform/cli optimize <procedural knight.glb> viewer/knight_procedural.glb --compress quantize --texture-compress webp --simplify false
+
+If `<model>.glb.txt` (the file as base64) sits next to the page it is used instead, for hosts that
+do not serve `.glb` files.
 
 Limits of the AI model: the back comes from `back.png`, whose pose differs slightly from the front
 image; surfaces no photo sees (under the arms, inside the cloak) get the nearest seen colour; the one

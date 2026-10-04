@@ -1,15 +1,16 @@
-<meta charset="utf-8">
-<title>Knight Turntable</title>
+<title>Wandering Knight Viewer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans+SC:wght@500;700&family=Alegreya+Sans:wght@400;500&display=swap">
 <style>
-  /* Layout: one full-height stage; a slim spec rail sits over it on wide screens and below it on phones. */
+  /* Layout: one full-height studio stage; a control rail floats over it on wide screens and sits below it on phones.
+     Single dark look on purpose: a turntable studio, so the model reads the same for every viewer. */
   :root {
-    --bg: #1d2024;          /* studio backdrop, slightly blue-steel */
-    --stage: #2a2e33;
-    --fg: #e4e1da;
-    --muted: #9a9e9f;
-    --line: #3b4046;
+    --bg: #1b1e22;          /* studio backdrop, blue-steel */
+    --stage: #2a2f35;
+    --panel: rgba(27, 30, 34, 0.78);
+    --fg: #e6e2da;
+    --muted: #9ba0a2;
+    --line: #3c4248;
     --accent: #b88a52;      /* worn leather */
     --display: "Alegreya Sans SC", "Trebuchet MS", sans-serif;
     --body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
@@ -18,49 +19,77 @@
   html, body { height: 100%; }
   [hidden] { display: none !important; }
   body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5; }
-  .wrap { position: relative; height: 100%; display: grid; grid-template-rows: 1fr; }
-  #stage { position: relative; min-height: 60vh; background: radial-gradient(ellipse at 50% 35%, var(--stage), var(--bg) 75%); }
+  .wrap { position: relative; height: 100%; }
+  #stage { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 35%, var(--stage), var(--bg) 75%); }
   canvas { display: block; width: 100%; height: 100%; touch-action: none; }
-  .status { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-family: var(--display); letter-spacing: .08em; pointer-events: none; }
-  .rail { position: absolute; top: 16px; left: 16px; width: min(300px, calc(100% - 32px)); display: grid; gap: 14px; }
+  .status { position: absolute; inset: 0; display: grid; place-items: center; padding-inline: 16px; text-align: center;
+            color: var(--muted); font-family: var(--display); letter-spacing: .08em; pointer-events: none; }
+  .rail { position: absolute; top: 16px; left: 16px; width: min(320px, calc(100% - 32px)); max-height: calc(100% - 32px);
+          overflow-y: auto; display: grid; gap: 14px; padding: 14px; background: var(--panel); border: 1px solid var(--line);
+          border-radius: 4px; backdrop-filter: blur(6px); }
   h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 26px; letter-spacing: .04em; line-height: 1.1; text-wrap: balance; }
-  .sub { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
-  .views { display: flex; flex-wrap: wrap; gap: 6px; }
-  button { font: 500 13px var(--display); letter-spacing: .08em; color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 3px; padding: 6px 10px; cursor: pointer; }
+  .sub { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+  .group { display: grid; gap: 6px; }
+  .label { font-family: var(--display); font-size: 12px; letter-spacing: .1em; color: var(--muted); }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; }
+  button { font: 500 13px var(--display); letter-spacing: .08em; color: var(--fg); background: transparent;
+           border: 1px solid var(--line); border-radius: 3px; padding: 6px 10px; cursor: pointer; }
   button:hover { border-color: var(--accent); }
   button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
-  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
   dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: 13px; }
   dt { color: var(--muted); font-family: var(--display); letter-spacing: .06em; }
-  dd { margin: 0; font-variant-numeric: tabular-nums; }
-  .hint { position: absolute; right: 16px; bottom: 14px; color: var(--muted); font-size: 12px; }
-  @media (max-width: 640px) {
-    .wrap { height: auto; }
-    #stage { height: 70vh; }
-    .rail { position: static; width: auto; padding: 16px; }
+  dd { margin: 0; font-variant-numeric: tabular-nums; min-width: 0; }
+  .hint { position: absolute; right: 16px; bottom: 14px; color: var(--muted); font-size: 12px; text-align: right; }
+  @media (max-width: 680px) {
+    .wrap { height: auto; display: grid; }
+    #stage { position: relative; height: 68vh; }
+    .rail { position: static; width: auto; max-height: none; margin: 12px 16px 16px; }
+    .hint { bottom: 10px; }
   }
 </style>
 
 <div class="wrap">
   <div id="stage">
     <div class="status" id="status">Loading model…</div>
-    <div class="hint">Drag to orbit · scroll to zoom</div>
+    <div class="hint">Drag to orbit · scroll or pinch to zoom · right-drag to pan</div>
   </div>
   <div class="rail">
     <div>
       <h1>Wandering Knight</h1>
-      <p class="sub" id="sub">Procedural model built from the front, back and side reference sheet.</p>
+      <p class="sub" id="sub"></p>
     </div>
-    <div class="views" role="group" aria-label="Model">
-      <button data-model="procedural" aria-pressed="true">Procedural</button>
-      <button data-model="ai" aria-pressed="false">AI scan</button>
+    <div class="group">
+      <span class="label" id="l-model">Model</span>
+      <div class="row" role="group" aria-labelledby="l-model">
+        <button id="m-ai" data-model="ai" aria-pressed="true">AI scan</button>
+        <button id="m-proc" data-model="procedural" aria-pressed="false">Procedural</button>
+      </div>
     </div>
-    <div class="views" role="group" aria-label="Camera view">
-      <button id="v-front" data-view="front" aria-pressed="true">Front</button>
-      <button id="v-back" data-view="back">Back</button>
-      <button id="v-side" data-view="side">Side</button>
-      <button id="v-face" data-view="face">Face</button>
-      <button id="v-spin" aria-pressed="false">Turntable</button>
+    <div class="group">
+      <span class="label" id="l-view">Camera</span>
+      <div class="row" role="group" aria-labelledby="l-view">
+        <button id="v-front" data-view="front" aria-pressed="true">Front</button>
+        <button id="v-back" data-view="back" aria-pressed="false">Back</button>
+        <button id="v-left" data-view="left" aria-pressed="false">Left</button>
+        <button id="v-right" data-view="right" aria-pressed="false">Right</button>
+        <button id="v-face" data-view="face" aria-pressed="false">Face</button>
+        <button id="v-profile" data-view="profile" aria-pressed="false">Profile</button>
+        <button id="v-spin" aria-pressed="false">Turntable</button>
+      </div>
+    </div>
+    <div class="group">
+      <span class="label" id="l-shade">Surface</span>
+      <div class="row" role="group" aria-labelledby="l-shade">
+        <button id="s-tex" data-shade="texture" aria-pressed="true">Texture</button>
+        <button id="s-clay" data-shade="clay" aria-pressed="false">Clay</button>
+        <button id="s-wire" data-shade="wire" aria-pressed="false">Wireframe</button>
+      </div>
+    </div>
+    <div class="group">
+      <label class="label" for="light">Key light angle <span id="light-val">0°</span></label>
+      <input id="light" type="range" min="-180" max="180" step="1" value="0">
     </div>
     <dl id="stats"></dl>
   </div>
@@ -78,41 +107,37 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
-const stage = document.getElementById("stage");
-const status = document.getElementById("status");
+const $ = id => document.getElementById(id);
+const stage = $("stage"), status = $("status");
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = true;
 stage.prepend(renderer.domElement);
 
 const scene = new THREE.Scene();
-const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
 
 const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 50);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.minDistance = 0.6;
+controls.minDistance = 0.4;
 controls.maxDistance = 9;
-controls.target.set(0, 0.95, 0);
 
 const key = new THREE.DirectionalLight(0xfff1e0, 2.2);
-key.position.set(-2, 3.5, 3);
 key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
+key.shadow.bias = -0.0005;
 Object.assign(key.shadow.camera, { left: -1.5, right: 1.5, top: 2.2, bottom: -0.2 });
-scene.add(key);
+scene.add(key, key.target);
 const rim = new THREE.DirectionalLight(0xcfe0ff, 1.4);
 rim.position.set(1, 3, -3);
 scene.add(rim);
 const hemi = new THREE.HemisphereLight(0xdfe6ee, 0x2a2420, 0.6);
 scene.add(hemi);
-// soft light from the camera (and a lighter hemisphere ground colour), on for the photo-textured
-// AI model: its texture already has the photo's shading, and with only a high key light and a dark
-// ground colour the down-facing eye sockets go black
+// soft light from the camera, for the photo-textured AI model: its texture already carries the photo's
+// shading, and with only a high key light the down-facing eye sockets go black
 const camFill = new THREE.DirectionalLight(0xfff6ec, 0);
 scene.add(camFill, camFill.target);
 
@@ -121,13 +146,24 @@ floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
 
+function setKeyAngle(deg) {
+  const a = THREE.MathUtils.degToRad(deg - 34);  // 0° = the default three-quarter key from the front left
+  key.position.set(Math.sin(a) * 3.6, 3.5, Math.cos(a) * 3.6);
+  $("light-val").textContent = `${deg}°`;
+}
+$("light").addEventListener("input", e => setKeyAngle(Number(e.target.value)));
+setKeyAngle(0);
+
 const VIEWS = {
-  front: { pos: [0, 1.15, 5.2], target: [0, 0.92, 0] },
-  back:  { pos: [0, 1.15, -5.2], target: [0, 0.92, 0] },
-  side:  { pos: [-5.2, 1.15, 0], target: [0, 0.92, 0] },
-  face:  { pos: [-0.35, 1.70, 1.25], target: [0, 1.66, 0] },
+  front:   { pos: [0, 1.15, 5.2],      target: [0, 0.92, 0] },
+  back:    { pos: [0, 1.15, -5.2],     target: [0, 0.92, 0] },
+  left:    { pos: [5.2, 1.15, 0],      target: [0, 0.92, 0] },
+  right:   { pos: [-5.2, 1.15, 0],     target: [0, 0.92, 0] },
+  face:    { pos: [-0.35, 1.68, 1.25], target: [0, 1.64, 0] },
+  profile: { pos: [-1.75, 1.66, 0.02], target: [0, 1.62, 0.05] },
 };
 let tween = null;
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 function goTo(name) {
   const v = VIEWS[name];
   tween = { t: 0, fromP: camera.position.clone(), toP: new THREE.Vector3(...v.pos),
@@ -136,75 +172,133 @@ function goTo(name) {
 }
 camera.position.set(...VIEWS.front.pos);
 controls.target.set(...VIEWS.front.target);
-
 document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => goTo(b.dataset.view)));
-const spinBtn = document.getElementById("v-spin");
-const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-spinBtn.addEventListener("click", () => {
+controls.addEventListener("start", () => { tween = null; document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", "false")); });
+$("v-spin").addEventListener("click", () => {
   controls.autoRotate = !controls.autoRotate;
   controls.autoRotateSpeed = 1.6;
-  spinBtn.setAttribute("aria-pressed", String(controls.autoRotate));
+  $("v-spin").setAttribute("aria-pressed", String(controls.autoRotate));
 });
 
 const MODELS = {
-  procedural: {
-    file: "knight.gltf.json",
-    sub: "Procedural model built from the front, back and side reference sheet.",
-    stats: [["Height", "1.80 m"], ["Triangles", "169,480"], ["Parts", "264 meshes, 19 materials"],
-            ["Armour", "3 steel chest lames, 4-lame pauldrons, mail sleeves"],
-            ["Arms", "Longsword, scabbard, heater shield with eagle"], ["File", "knight.glb, PBR textures embedded"]],
-  },
   ai: {
-    file: "../ai/hunyuan2_knight.glb",
+    file: "knight_ai.glb",
     camFill: 1.6,
     hemiGround: 0x6a625a,
-    // the photo texture already has the face's own shadows; shadow-mapping the brow onto the eye
-    // sockets on top of that turns them into a black band
-    noShadow: ["Head"],
-    sub: "Hunyuan3D-2 body and a multi-view head fitted to the photo's face landmarks, textures baked from the reference photos.",
-    stats: [["Height", "1.80 m"], ["Triangles", "329,878"], ["Parts", "2 meshes: body, head"],
-            ["Texture", "2 × 2048² baked, head from 4× upscaled crops"], ["File", "ai/hunyuan2_knight.glb"]],
+    noShadow: ["Head"],  // shadow-mapping the brow onto the photo's own eye shadows doubles them
+    sub: "Image-to-3D: Hunyuan3D-2 body and a multi-view Hunyuan3D-2mv head, face fitted to the photo's landmarks, textures baked from the reference photos.",
+    extra: [["Texture", "2 × 2048², baked from the photos"]],
+  },
+  procedural: {
+    file: "knight_procedural.glb",
+    sub: "Procedural model built in code from the front, back and side reference sheet.",
+    extra: [["Texture", "Generated PBR materials"]],
   },
 };
+const clayMat = new THREE.MeshStandardMaterial({ color: 0xb9b6b0, roughness: 0.7, metalness: 0 });
+const wireMat = new THREE.MeshBasicMaterial({ color: 0xd8b07a, wireframe: true });
+let shade = "texture";
+function applyShade(model) {
+  model.traverse(o => {
+    if (!o.isMesh) return;
+    o.userData.orig ??= o.material;
+    o.material = shade === "clay" ? clayMat : shade === "wire" ? wireMat : o.userData.orig;
+  });
+}
+document.querySelectorAll("[data-shade]").forEach(b => b.addEventListener("click", () => {
+  shade = b.dataset.shade;
+  document.querySelectorAll("[data-shade]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  if (current) applyShade(current);
+}));
+
 const loader = new GLTFLoader();
 const loaded = {};
 let current = null;
-function showModel(name) {
-  const m = MODELS[name];
-  document.querySelectorAll("[data-model]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.model === name)));
-  document.getElementById("sub").textContent = m.sub;
-  camFill.intensity = m.camFill || 0;
-  hemi.groundColor.set(m.hemiGround ?? 0x2a2420);
-  document.getElementById("stats").replaceChildren(...m.stats.flatMap(([k, v]) => {
+function stats(model, bytes, m) {
+  let tris = 0, meshes = 0;
+  const box = new THREE.Box3().setFromObject(model);
+  model.traverse(o => {
+    if (!o.isMesh) return;
+    meshes++;
+    const g = o.geometry;
+    tris += (g.index ? g.index.count : g.attributes.position.count) / 3;
+  });
+  const rows = [["Height", `${(box.max.y - box.min.y).toFixed(2)} m`], ["Triangles", Math.round(tris).toLocaleString("en-US")],
+                ["Meshes", String(meshes)], ...m.extra];
+  if (bytes) rows.push(["Download", `${(bytes / 1048576).toFixed(1)} MB`]);
+  $("stats").replaceChildren(...rows.flatMap(([k, v]) => {
     const dt = document.createElement("dt"), dd = document.createElement("dd");
     dt.textContent = k; dd.textContent = v;
     return [dt, dd];
   }));
+}
+function showModel(name) {
+  const m = MODELS[name];
+  document.querySelectorAll("[data-model]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.model === name)));
+  $("sub").textContent = m.sub;
+  camFill.intensity = m.camFill || 0;
+  hemi.groundColor.set(m.hemiGround ?? 0x2a2420);
   if (current) scene.remove(current);
   current = null;
-  if (loaded[name]) { current = loaded[name]; scene.add(current); status.hidden = true; return; }
+  if (loaded[name]) {
+    current = loaded[name].model;
+    applyShade(current);
+    scene.add(current);
+    stats(current, loaded[name].bytes, m);
+    status.hidden = true;
+    return;
+  }
+  $("stats").replaceChildren();
   status.hidden = false;
   status.textContent = "Loading model…";
-  loader.load(m.file, gltf => {
+  // fetch the binary glTF with progress and hand it straight to the loader; where the page host
+  // serves no .glb files (the published page) it ships next to the page as base64 text instead
+  fetchModel(m.file).then(buf => loader.parse(buf, "", gltf => onModel(gltf, buf.byteLength), onError)).catch(onError);
+  function onModel(gltf, bytes) {
     const model = gltf.scene;
     const noShadow = new Set(m.noShadow || []);
     model.traverse(o => {
       if (o.isMesh) o.castShadow = o.receiveShadow = !(noShadow.has(o.name) || noShadow.has(o.parent?.name));
     });
-    loaded[name] = model;
-    if (document.querySelector(`[data-model="${name}"]`).getAttribute("aria-pressed") !== "true") return;
+    loaded[name] = { model, bytes };
+    if ($(name === "ai" ? "m-ai" : "m-proc").getAttribute("aria-pressed") !== "true") return;
     current = model;
+    applyShade(model);
     scene.add(model);
+    stats(model, bytes, m);
     status.hidden = true;
-  }, ev => {
-    if (ev.total) status.textContent = `Loading model… ${Math.round(ev.loaded / ev.total * 100)}%`;
-  }, err => {
+  }
+  function onError(err) {
     status.textContent = "The model file could not be loaded. Reload the page to try again.";
     console.error(err);
-  });
+  }
+}
+async function fetchModel(file) {
+  let res = await fetch(`${file}.txt`);
+  const base64 = res.ok;
+  if (!base64) res = await fetch(file);
+  if (!res.ok) throw new Error(`${file}: HTTP ${res.status}`);
+  const total = Number(res.headers.get("content-length")) || 0;
+  const reader = res.body.getReader();
+  const parts = [];
+  let got = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    parts.push(value);
+    got += value.length;
+    if (total) status.textContent = `Loading model… ${Math.min(100, Math.round(got / total * 100))}%`;
+  }
+  const data = await new Blob(parts).arrayBuffer();
+  if (!base64) return data;
+  status.textContent = "Preparing model…";
+  const bin = atob(new TextDecoder().decode(data).trim());
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out.buffer;
 }
 document.querySelectorAll("[data-model]").forEach(b => b.addEventListener("click", () => showModel(b.dataset.model)));
-showModel("procedural");
+showModel("ai");
 
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;

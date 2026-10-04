@@ -384,8 +384,8 @@ def zbuffer(mesh, pix, depth, res, samples=3_000_000):
 def bake(mesh, views, name, size, fill="nearest", power=4):
     """UV-unwrap the mesh and bake one texture that blends every photo per texel.
 
-    views: dicts(name, img=RGB array, mask, params, axes=[camera axes], weight, erode). Each texel takes
-    sum(w * colour) / sum(w), w = weight * cos(angle to the camera)^power, over the cameras that
+    views: dicts(name, img=RGB array, mask, params, axes=[camera axes], weight, cutoff, erode). Each
+    texel takes sum(w * colour) / sum(w), w = weight * max(cos(angle) - cutoff, 0)^power, over the cameras that
     see it (z-buffer) inside the photo's mask; no seams between photos. Texels no camera sees get
     the nearest seen texel's colour ("nearest": cloak insides, armpits) or the colour from the
     photo they face most directly, occlusion ignored ("facing": eye sockets, nostrils).
@@ -420,13 +420,15 @@ def bake(mesh, views, name, size, fill="nearest", power=4):
             pi = np.clip(p.astype(int), [0, 0], [w - 1, h - 1])
             inside = (p[:, 0] >= 0) & (p[:, 0] < w) & (p[:, 1] >= 0) & (p[:, 1] < h) \
                 & inner[pi[:, 1], pi[:, 0]]
-            facing = np.clip(sd * nrm[:, cd], 0, None) * v.get("weight", 1.0)
+            cosang = np.clip(sd * nrm[:, cd], 0, None)
+            # grazing views stretch the photo across the surface: drop them below `cutoff`
+            facing = np.clip(cosang - v.get("cutoff", 0.0), 0, None) * v.get("weight", 1.0) ** (1 / power)
             col = np.stack([map_coordinates(img[..., c], [p[:, 1] - 0.5, p[:, 0] - 0.5], order=1,
                                             mode="nearest") for c in range(3)], 1)
             wt = np.where(seen & inside, facing ** power, 0.0)
             acc += wt[:, None] * col
             wsum += wt
-            fb = np.where(inside, facing, -np.inf)
+            fb = np.where(inside, cosang * v.get("weight", 1.0), -np.inf)
             better = fb > best_w
             best_w[better], best_c[better] = fb[better], col[better]
     ok = wsum > 1e-6
@@ -486,24 +488,29 @@ def main(body_path, out, head_path=None):
         photo_lm = face_landmarks(crops["front"][0])
         if photo_lm is not None:
             head = fit_face(head, hparams["front"], photo_lm, crops["front"][1].shape)
-            neck = neck_height(head)
+            # the neck from the photo: a little below the chin (152), a third of the way to the
+            # nose tip's distance; the profile search lands in the collar on a broad bust
+            _, fsy, _, foy = hparams["front"]
+            chin, tip = (foy - photo_lm[[152, 1], 1]) / fsy
+            neck = chin - 0.3 * (tip - chin)
 
         # keep the head down to just below the neck (a clean planar cut), so it tucks into the
-        # body's collar
+        # body's collar instead of bringing its own badly textured piece of cloak
         cut = neck - 0.015 * np.ptp(head.vertices[:, 1])
         head = head.slice_plane([0, cut, 0], [0, 1, 0])
         above = head.vertices[:, 1] > neck
         textured = bake(head, [
             dict(name="front", img=crops["front"][0], mask=crops["front"][1], params=hparams["front"],
-                 axes=haxes["front"], erode=6),
+                 axes=haxes["front"], cutoff=0.25, erode=6),
             # one profile photo for both sides (mirrored on the far side). Its head is turned a
-            # little differently from the front photo, so around the eyes it lines up worse: keep
-            # it weak, so it only wins where the front photo can't see (ears, back of the jaw)
+            # little differently from the front photo, so around the eyes it lines up worse; with
+            # the grazing cutoff the front photo still wins there, the profile on the temples/ears.
+            # Its higher cutoff keeps it off the cheeks, where it has scars the front photo hasn't
             dict(name="side", img=crops["side"][0], mask=crops["side"][1], params=hparams["side"],
-                 axes=haxes["side"], weight=0.25, erode=6),
+                 axes=haxes["side"], weight=0.6, cutoff=0.45, erode=6),
             dict(name="back", img=crops["back"][0], mask=crops["back"][1], params=hparams["back"],
-                 axes=haxes["back"], erode=6),
-        ], "Head", HEAD_TEX, fill="facing")
+                 axes=haxes["back"], cutoff=0.25, erode=6),
+        ], "Head", HEAD_TEX, fill="facing", power=2)
 
         # head frame -> front.png pixels (the crop is 4x) -> body frame; depth scaled alike
         hs = hparams["front"]
