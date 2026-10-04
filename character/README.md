@@ -17,3 +17,10 @@ brown lining, brown mantle with ring brooch, leather backpack with buckled strap
 right hand, scabbard on the left hip, wooden heater shield with steel rim and black eagle.
 
 Rebuild: `pip install bpy==4.2.0 pillow && python3 make_textures.py && python3 build_knight.py --render`
+
+## AI image-to-3D (`ai/`)
+
+`ai/generate.py` turns `ai/front.png` into a textured GLB using Hugging Face ZeroGPU Spaces, trying
+TRELLIS.2 → Hunyuan3D-2.1 → TRELLIS → Hunyuan3D-2 and stopping at the first one that succeeds
+(`python3 ai/generate.py trellis` runs a single backend). TRELLIS.2 and Hunyuan3D-2.1 need a valid
+`HF_TOKEN` (Hunyuan3D-2.1 needs HF PRO); TRELLIS and Hunyuan3D-2 fit the anonymous daily GPU quota.
