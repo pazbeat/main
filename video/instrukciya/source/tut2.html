@@ -88,7 +88,7 @@ html,body{overflow:hidden;background:#000}
 <script>
 const Q = new URLSearchParams(location.search); const DEV = Q.get('dev') || 'pc'; const PC = DEV === 'pc'; const LANG = Q.get('lang') || 'ru';
 const TXT = {
-  ru: {steps: {1: 'Дизайн', 2: 'Подарок', 3: 'Подпись', 4: PC ? 'Филиал' : 'Салон', 5: 'Отправка', 6: 'Оплата'}, badge: (n, s) => `Шаг ${n} из 6 · ${s}`,
+  ru: {steps: {1: 'Открытка', 2: 'Подарок', 3: 'Для кого', 4: 'Салон', 5: 'Отправка', 6: 'Оплата'}, badge: (n, s) => `Шаг ${n} из 6 · ${s}`,
     inE: 'Видеоинструкция', inH: 'Как купить<br><i>подарочный сертификат</i>', inC: `на сайте imbir.kz · ${PC ? 'с компьютера' : 'с телефона'}`,
     afE: 'После оплаты', afH: 'Сертификат<br><i>придёт на почту</i>', mail1: 'Входящие · сейчас', mail2: 'Вам подарок — сертификат Imbir Thai Spa', mail3: 'PDF с QR‑кодом · действует 3 месяца',
     check: 'imbir.kz → «Проверить» — статус и баланс сертификата', tmH: 'Важные <i>условия</i>',
@@ -97,7 +97,7 @@ const TXT = {
       ['Запись заранее — по телефону или WhatsApp салона', 'номера всех салонов: imbir.kz → «Салоны»'], ['Приходите за 10–15 минут до начала', ''],
       ['Покажите сертификат администратору', 'на экране телефона или распечатанным'], ['Дороже номинала — доплата на месте', 'дешевле — остаток останется на балансе'],
       ['Отмена записи — не позднее чем за 3 часа', 'иначе услуга спишется с сертификата'], ['Сертификат не обменивается на деньги', '']]},
-  en: {steps: {1: 'Design', 2: 'Gift', 3: PC ? 'Message' : 'Recipient', 4: 'Salon', 5: 'Delivery', 6: 'Payment'}, badge: (n, s) => `Step ${n} of 6 · ${s}`,
+  en: {steps: {1: 'Design', 2: 'Gift', 3: 'For whom', 4: 'Salon', 5: 'Sending', 6: 'Payment'}, badge: (n, s) => `Step ${n} of 6 · ${s}`,
     inE: 'Video guide', inH: 'How to buy<br><i>a gift certificate</i>', inC: `on imbir.kz · ${PC ? 'from a computer' : 'from a phone'}`,
     afE: 'After payment', afH: 'The certificate<br><i>arrives by email</i>', mail1: 'Inbox · now', mail2: 'A gift for you — Imbir Thai Spa certificate', mail3: 'PDF with a QR code · valid for 3 months',
     check: 'imbir.kz/en/check — certificate status and balance', tmH: 'Important <i>terms</i>',
@@ -106,7 +106,7 @@ const TXT = {
       ['Book in advance — by phone or the salon’s WhatsApp', 'all salon numbers: imbir.kz → “Salons”'], ['Arrive 10–15 minutes before the start', ''],
       ['Show the certificate to the administrator', 'on your phone screen or printed'], ['Program costs more — pay the difference', 'costs less — the rest stays on the balance'],
       ['Cancel at least 3 hours in advance', 'otherwise the service is written off'], ['The certificate cannot be exchanged for cash', '']]},
-  kk: {steps: {1: 'Дизайн', 2: 'Сыйлық', 3: PC ? 'Арнау жазуы' : 'Кімге', 4: PC ? 'Филиал' : 'Салон', 5: 'Жіберу', 6: 'Төлем'}, badge: (n, s) => `${n}-қадам, барлығы 6 · ${s}`,
+  kk: {steps: {1: 'Ашықхат', 2: 'Сыйлық', 3: 'Кімге', 4: 'Салон', 5: 'Жіберу', 6: 'Төлем'}, badge: (n, s) => `${n}-қадам, барлығы 6 · ${s}`,
     inE: 'Бейненұсқаулық', inH: 'Сыйлық сертификатын<br><i>қалай сатып алуға болады</i>', inC: `imbir.kz сайтында · ${PC ? 'компьютерден' : 'телефоннан'}`,
     afE: 'Төлемнен кейін', afH: 'Сертификат<br><i>поштаға келеді</i>', mail1: 'Кіріс · қазір', mail2: 'Сізге сыйлық — Imbir Thai Spa сертификаты', mail3: 'QR‑коды бар PDF · 3 ай жарамды',
     check: 'imbir.kz/kk/check — сертификаттың күйі мен балансы', tmH: 'Маңызды <i>шарттар</i>',
@@ -140,7 +140,7 @@ const ICON = {
   cancel: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M10 13l4 4M14 13l-4 4"/></svg>',
   cash: '<svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M3 21L21 3"/></svg>',
 };
-const TERMS = ['t1','t2','t3','t4','t5','t6','t7','t8'].map((id, k) => [id, ['cal','pin','phone','clock','show','wallet','cancel','cash'][k], ...X.terms[k]]);
+let TERMS = ['t1','t2','t3','t4','t5','t6','t7','t8'].map((id, k) => [id, ['cal','pin','phone','clock','show','wallet','cancel','cash'][k], ...X.terms[k]]);
 
 function buildGraphics() {
   const G = (id, html) => { $(id).innerHTML = html; };
@@ -220,8 +220,8 @@ function renderGraphic(sid, t) {
   }
   if (sid === 'terms') {
     rv($('tm-e'), t, s0 + .1); rv($('tm-h'), t, s0 + .3, {dy: 30});
-    const page2 = t >= lineV('t5') - .35;
-    TERMS.forEach(([id], k) => { const el = $('tm-' + id); const onPage = (k < 4) !== page2; if (!onPage) { el.style.display = 'none'; return; } el.style.display = 'flex';
+    const page2 = TERMS.length > 4 && t >= lineV('t5') - .35;
+    TERMS.forEach(([id], k) => { const el = $('tm-' + id); const onPage = TERMS.length <= 4 || (k < 4) !== page2; if (!onPage) { el.style.display = 'none'; return; } el.style.display = 'flex';
       const a = lineV(id) - .15; rv(el, t, a, {dx: -40, dy: 0, d: .6});
       const next = TERMS[k + 1] ? lineV(TERMS[k + 1][0]) - .15 : 1e9; const active = t >= a && t < next;
       el.querySelector('.tx').style.color = active ? '#fff' : 'rgba(255,255,255,.62)'; el.querySelector('.ic').style.background = active ? 'rgba(236,201,120,.28)' : 'rgba(236,201,120,.06)';
@@ -248,7 +248,7 @@ window.seek = seek;
 window.ready = (async () => {
   PLAN = await (await fetch(Q.get('plan') || (LANG === 'ru' ? `plan2_${DEV}.json` : `plan3_${LANG}_${DEV}.json`))).json();
   PLAN.lines.forEach(l => LN[l.id] = l); VW = PLAN.vw; VH = PLAN.vh; S0 = PC ? 1920 / VW : 682 / VW;
-  buildGraphics();
+  TERMS = TERMS.filter(([id]) => LN[id]); buildGraphics();
   const first = PLAN.frames.find(f => f.kind === 's'); $('in-shot').src = first.img;
   await Promise.all(['400', '500', '600'].flatMap(w => [`${w} 40px "Cormorant Garamond"`, `italic ${w} 40px "Cormorant Garamond"`, `${w} 20px Montserrat`]).map(f => document.fonts.load(f, 'Таиланд abc ₸ әғқңөұүһі')));
   await document.fonts.ready; await Promise.all([...document.images].map(i => i.decode().catch(() => {})));
