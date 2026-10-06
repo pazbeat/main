@@ -36,7 +36,7 @@ out = []
 for i, lid in enumerate(ids):
     seg = a[int(bounds[i] * sr):int(bounds[i + 1] * sr)]
     fn = f'el/{LANG}_{lid}.wav'; sf.write(fn + '.raw.wav', seg, sr)
-    subprocess.run([FF, '-loglevel', 'error', '-y', '-i', fn + '.raw.wav', '-af', 'silenceremove=start_periods=1:start_threshold=-50dB,areverse,silenceremove=start_periods=1:start_threshold=-55dB,apad=pad_dur=0.1,areverse,afade=t=in:d=0.01,loudnorm=I=-18:TP=-2:LRA=7', '-ar', '48000', '-ac', '2', fn], check=True)
+    subprocess.run([FF, '-loglevel', 'error', '-y', '-i', fn + '.raw.wav', '-af', ('atempo=1.07,' if LANG == 'kk' else '') + 'silenceremove=start_periods=1:start_threshold=-50dB,areverse,silenceremove=start_periods=1:start_threshold=-55dB,apad=pad_dur=0.1,areverse,afade=t=in:d=0.01,loudnorm=I=-18:TP=-2:LRA=7', '-ar', '48000', '-ac', '2', fn], check=True)
     d = sf.info(fn).duration; out.append((lid, round(d, 2)))
     txt = ''.join(w[2] for w in W if w[0] >= bounds[i] - .05 and w[1] <= bounds[i + 1] + .05)
     print(lid, round(d, 2), '|', lines[i][:50], '||', txt.strip()[:60])

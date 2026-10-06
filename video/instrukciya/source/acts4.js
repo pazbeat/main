@@ -43,10 +43,10 @@
       if (PC) await click(T(LBL.city), {ms: 700, after: 700}); else await arc(LBL.city, 660, 5);
       await click(vbtn(LBL.salon), {ms: 600, after: 400}).catch(() => {});
     },
-    when_now: async () => { await wait(600); const bb = await hover(PC ? T(LBL.nowPc) : vbtn(new RegExp(LBL.nowPc.split(' ')[0])), 700); ring(bb); },
-    when_date: async () => { await click(PC ? T(LBL.datePc) : vbtn(new RegExp(LBL.datePc.split(' ').slice(-1)[0])), {ms: 600, after: 1200}); },
+    when_now: async () => { await wait(600); const bb = await hover(PC ? T(LBL.nowPc) : vbtn(LBL.nowMob), 700); ring(bb); },
+    when_date: async () => { await click(PC ? T(LBL.datePc) : vbtn(LBL.dateMob), {ms: 600, after: 1200}); },
     email_buyer: async () => {
-      await click(PC ? T(LBL.nowPc) : vbtn(new RegExp(LBL.nowPc.split(' ')[0])), {ms: 500, after: 300});
+      await click(PC ? T(LBL.nowPc) : vbtn(LBL.nowMob), {ms: 500, after: 300});
       if (PC) await cam(emailIn(0).locator('xpath=../..'), 90).catch(() => {});
       await click(emailIn(0), {ms: 600, after: 150}); await type('you@example.com', 2);
     },
