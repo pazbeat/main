@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8"><title>Imbir reel</title>
+<link href="../fonts/fonts.css" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#000}
+#st{position:relative;width:1080px;height:1920px;overflow:hidden;background:#12051a;font-family:Montserrat,sans-serif;color:#fff}
+.lay{position:absolute;inset:0;overflow:hidden}
+.lay img.bg{position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:50% 45%;will-change:transform}
+.shade{position:absolute;inset:0;pointer-events:none}
+.txt{position:absolute;left:70px;right:70px;text-align:center;text-shadow:0 4px 30px rgba(20,4,30,.55)}
+.eb{font-weight:500;letter-spacing:.42em;text-transform:uppercase;color:#ecc978;font-size:26px}
+.h{font-family:"Cormorant Garamond",serif;font-weight:500;line-height:1.0}
+.h i{font-style:italic;font-weight:400;color:#f3d48c}
+.w{display:inline-block;will-change:transform,opacity,filter}
+#phone{position:absolute;left:210px;top:520px;width:660px;height:1428px;border-radius:84px;box-shadow:0 60px 140px rgba(0,0,0,.6),0 0 0 14px #120617,0 0 0 16px rgba(236,201,120,.55);overflow:hidden;background:#fff;transform-origin:50% 40%}
+#phone img{width:100%;height:100%;display:block}
+.tap{position:absolute;width:90px;height:90px;margin:-45px 0 0 -45px;border-radius:50%;border:4px solid rgba(217,169,60,.95);background:rgba(236,201,120,.3)}
+#deck{position:absolute;inset:0;perspective:1800px}
+.card{position:absolute;left:240px;top:700px;width:600px;height:391px;border-radius:22px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.5),0 0 0 2px rgba(236,201,120,.35);transform-origin:50% 230%;will-change:transform,opacity}
+.card img{width:100%;height:100%;display:block;object-fit:cover}
+#hero{width:860px;height:560px;left:110px;top:820px;transform-origin:50% 50%}
+#sheen{position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,240,200,.55) 48%,rgba(255,255,255,.75) 50%,rgba(255,240,200,.5) 52%,transparent 65%);mix-blend-mode:screen}
+.pill{display:inline-block;border-radius:999px;background:linear-gradient(135deg,#f0d38f,#b69244);color:#2b0b3d;font-weight:700;letter-spacing:.08em}
+#fx{position:absolute;inset:0;pointer-events:none}
+#grain{position:absolute;inset:-60px;pointer-events:none;opacity:.07;mix-blend-mode:overlay}
+#vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(130% 90% at 50% 45%,transparent 55%,rgba(10,2,16,.55) 100%)}
+#leak{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen}
+#dip{position:absolute;inset:0;background:#0c0312;pointer-events:none}
+</style></head>
+<body><div id="st">
+  <div class="lay" id="L0"><img class="bg" id="b0"></div>
+  <div class="lay" id="L1"><img class="bg" id="b1"></div>
+  <div class="shade" id="shade"></div>
+  <div id="scene"></div>
+  <canvas id="fx" width="1080" height="1920"></canvas>
+  <canvas id="grain" width="600" height="1100"></canvas>
+  <div id="vig"></div><div id="leak"></div><div id="dip"></div>
+</div>
+<script>
+const FPS = 30, TOTAL = 24.5;
+const cl = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const ease = k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+const eo = k => 1 - Math.pow(1 - k, 3);
+const pad = n => String(n).padStart(4, '0');
+// scenes: [start, end, clip, nFrames, startFrame, kenburns from->to, darkness]
+const S = [
+  {t0: 0.0, t1: 3.4, clip: 'petals', n: 176, f0: 1, z: [1.12, 1.0], dark: .25},
+  {t0: 3.4, t1: 5.8, clip: 'massage', n: 146, f0: 20, z: [1.04, 1.12], dark: .35},
+  {t0: 5.8, t1: 8.1, clip: 'hammam', n: 155, f0: 10, z: [1.1, 1.02], dark: .35},
+  {t0: 8.1, t1: 10.3, clip: 'lounge', n: 172, f0: 30, z: [1.0, 1.08], dark: .35},
+  {t0: 10.3, t1: 16.5, clip: 'garden', n: 130, f0: 1, z: [1.15, 1.25], dark: .55, blur: 14, pingpong: true},
+  {t0: 16.5, t1: 20.1, clip: 'candle', n: 140, f0: 1, z: [1.1, 1.2], dark: .5, blur: 10},
+  {t0: 20.1, t1: 24.5, clip: 'towel', n: 169, f0: 1, z: [1.18, 1.05], dark: .62, blur: 3},
+];
+const XF = .5;   // crossfade
+function clipFrame(s, t) {
+  let k = Math.round((t - s.t0) * FPS);
+  if (s.pingpong) { const m = s.n - s.f0; k = k % (2 * m); if (k >= m) k = 2 * m - k; }
+  return `fr/${s.clip}/${pad(Math.min(s.n, s.f0 + Math.max(0, k)))}.jpg`;
+}
+function setLayer(i, s, t, op) {
+  const L = document.getElementById('L' + i), im = document.getElementById('b' + i);
+  if (!s) { L.style.opacity = 0; return Promise.resolve(); }
+  L.style.opacity = op;
+  const k = cl((t - s.t0) / (s.t1 - s.t0 + XF)), z = s.z[0] + (s.z[1] - s.z[0]) * ease(k);
+  im.style.transform = `scale(${z.toFixed(4)})`;
+  im.style.filter = `${s.blur ? `blur(${s.blur}px) ` : ''}brightness(${(1 - s.dark * .55).toFixed(3)})`;
+  const src = clipFrame(s, t);
+  if (im.getAttribute('src') === src) return Promise.resolve();
+  im.setAttribute('src', src); return im.decode().catch(() => {});
+}
+// ---------- text helpers ----------
+function words(html) { return html.split(/(<i>.*?<\/i>|\s+)/).filter(x => x && !/^\s+$/.test(x)).map(w => w.startsWith('<i>') ? `<i>${w.slice(3, -4).split(' ').map(x => `<span class="w">${x}</span>`).join(' ')}</i>` : `<span class="w">${w}</span>`).join(' '); }
+function animWords(el, t, tin, tout, stagger = .11) {
+  el.querySelectorAll('.w').forEach((w, k) => {
+    const a = cl((t - tin - k * stagger) / .75), o = cl((tout - t) / .35);
+    const e = eo(a);
+    w.style.opacity = (e * o).toFixed(3); w.style.transform = `translateY(${(36 * (1 - e) - 14 * (1 - o)).toFixed(1)}px)`;
+    w.style.filter = `blur(${(14 * (1 - e) + 6 * (1 - o)).toFixed(2)}px)`;
+  });
+}
+function fadeIn(el, t, tin, tout, dy = 30, d = .7) { const a = eo(cl((t - tin) / d)), o = cl((tout - t) / .35); el.style.opacity = (a * o).toFixed(3); el.style.transform = `translateY(${(dy * (1 - a)).toFixed(1)}px)`; el.style.filter = `blur(${(10 * (1 - a)).toFixed(2)}px)`; }
+const SC = document.getElementById('scene');
+SC.innerHTML = `
+ <div class="txt" id="t1e" style="top:300px"><div class="eb">Imbir Thai Spa</div></div>
+ <div class="txt h" id="t1" style="top:420px;font-size:150px">${words('Подарите')}<br><span style="font-size:170px">${words('<i>Таиланд</i>')}</span></div>
+ <div class="txt" id="t1s" style="top:840px;font-size:34px;letter-spacing:.06em;color:rgba(255,255,255,.88)">тем, кто дорог</div>
+ <div class="txt h" id="t2" style="top:330px;font-size:104px">${words('Тайские мастера')}<br><span style="font-size:92px">${words('<i>с дипломами Таиланда</i>')}</span></div>
+ <div class="txt h" id="t3" style="top:330px;font-size:104px">${words('Хаммам, сауна')}<br><span style="font-size:92px">${words('<i>и ритуалы для двоих</i>')}</span></div>
+ <div class="txt h" id="t4" style="top:320px;font-size:150px">${words('<i>9 салонов</i>')}</div>
+ <div class="txt" id="t4s" style="top:520px;font-size:38px;letter-spacing:.08em">в 7 городах Казахстана</div>
+ <div class="txt" id="t5e" style="top:180px"><div class="eb">imbir.kz</div></div>
+ <div class="txt h" id="t5" style="top:250px;font-size:96px">${words('Сертификат онлайн')}<br><span style="font-size:96px">${words('<i>за 2 минуты</i>')}</span></div>
+ <div id="phone"><img id="ph"><div id="taps"></div></div>
+ <div class="txt h" id="t6" style="top:250px;font-size:100px">${words('Десятки открыток')}<br><span style="font-size:92px">${words('<i>на любой повод</i>')}</span></div>
+ <div id="deck">${Array.from({length: 12}, (_, k) => `<div class="card" id="cd${k}"><img src="cards/sel/c${String(k).padStart(2, '0')}.webp"></div>`).join('')}
+ <div class="card" id="hero"><img src="cards/sel/c12.webp"><div id="sheen"></div></div></div>
+ <div class="txt" id="t6p" style="top:1520px"><span class="pill" style="font-size:40px;padding:22px 56px">от 20 000 ₸</span></div>
+ <img id="logo" src="../a/logo-white.png" style="position:absolute;left:190px;top:520px;width:700px">
+ <div class="txt h" id="t7" style="top:790px;font-size:96px">${words('Подарите тепло')}<br>${words('<i>Таиланда</i>')}</div>
+ <div class="txt" id="t7b" style="top:1110px"><span class="pill" style="font-size:44px;padding:28px 70px">imbir.kz</span></div>
+ <div class="txt" id="t7s" style="top:1250px;font-size:32px;letter-spacing:.1em;color:rgba(255,255,255,.85)">Подарочный сертификат онлайн</div>`;
+const $ = id => document.getElementById(id);
+let PHM = [];
+// ---------- gold dust (deterministic) ----------
+const P = []; { let s = 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647; for (let i = 0; i < 90; i++) P.push({x: r() * 1080, y: r() * 1920, z: .3 + r() * .7, ph: r() * 6.28, sp: 8 + r() * 26}); }
+function dust(t) {
+  const c = $('fx').getContext('2d'); c.clearRect(0, 0, 1080, 1920); c.globalCompositeOperation = 'lighter';
+  for (const p of P) {
+    const y = ((p.y - t * p.sp * p.z) % 1920 + 1920) % 1920, x = p.x + Math.sin(t * .6 + p.ph) * 30 * p.z;
+    const a = (.25 + .75 * (.5 + .5 * Math.sin(t * 1.7 + p.ph))) * .55 * p.z, r = 2 + 9 * p.z;
+    const g = c.createRadialGradient(x, y, 0, x, y, r * 3); g.addColorStop(0, `rgba(255,226,160,${a})`); g.addColorStop(.35, `rgba(236,190,110,${a * .45})`); g.addColorStop(1, 'rgba(236,190,110,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, r * 3, 0, 6.29); c.fill();
+  }
+}
+function grain(fi) { const c = $('grain').getContext('2d'), d = c.createImageData(600, 1100); let s = fi * 7919 + 1; for (let i = 0; i < d.data.length; i += 4) { s = (s * 1103515245 + 12345) & 0x7fffffff; const v = s >> 23; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } c.putImageData(d, 0, 0); $('grain').style.transform = `scale(2) translate(${(fi * 13) % 30}px,${(fi * 7) % 30}px)`; }
+async function seek(fi) {
+  const t = fi / FPS, jobs = [];
+  // background layers with crossfades
+  const i = S.findIndex(s => t >= s.t0 && t < s.t1); const cur = S[i < 0 ? S.length - 1 : i], nxt = S[(i < 0 ? S.length : i) + 1];
+  const into = nxt ? (t - (nxt.t0 - XF)) / XF : -1;
+  jobs.push(setLayer(0, cur, t, 1));
+  if (nxt && into > 0) jobs.push(setLayer(1, nxt, t, ease(cl(into)).toFixed(3))); else jobs.push(setLayer(1, null));
+  // light leak on transitions
+  let leak = 0; for (const s of S.slice(1)) { const d = (t - s.t0 + XF * .3) / .7; if (d > 0 && d < 1) leak = Math.max(leak, Math.sin(d * Math.PI)); }
+  $('leak').style.background = `radial-gradient(70% 45% at ${30 + 40 * Math.sin(t)}% 30%,rgba(255,190,110,${(.55 * leak).toFixed(3)}),rgba(255,140,80,${(.25 * leak).toFixed(3)}) 45%,transparent 75%)`;
+  $('shade').style.background = `linear-gradient(180deg,rgba(18,5,26,.55) 0%,rgba(18,5,26,0) 38%,rgba(18,5,26,0) 62%,rgba(18,5,26,.65) 100%)`;
+  // texts
+  fadeIn($('t1e'), t, .25, 3.3, 16); animWords($('t1'), t, .45, 3.3, .22); fadeIn($('t1s'), t, 1.7, 3.3, 20);
+  animWords($('t2'), t, 3.65, 5.7); animWords($('t3'), t, 6.05, 8.0); animWords($('t4'), t, 8.35, 10.2); fadeIn($('t4s'), t, 8.9, 10.2, 20);
+  fadeIn($('t5e'), t, 10.5, 16.4, 16); animWords($('t5'), t, 10.6, 16.4, .1);
+  // phone
+  const ph = $('phone'); const pk = cl((t - 10.6) / .9), po = cl((16.45 - t) / .45);
+  if (t > 10.3 && t < 16.6) {
+    ph.style.display = 'block'; const e = eo(pk);
+    ph.style.opacity = (e * po).toFixed(3);
+    ph.style.transform = `translateY(${(260 * (1 - e) + 60 * (1 - po)).toFixed(1)}px) rotateZ(${(-3 * (1 - e) + .8 * Math.sin(t * .9)).toFixed(2)}deg) scale(${(.96 + .04 * e).toFixed(3)})`;
+    const k = cl(Math.round((t - 10.6) * FPS), 0, PHM.length - 1); const src = `fr/phone/${pad(k + 1)}.jpg`;
+    if ($('ph').getAttribute('src') !== src) { $('ph').setAttribute('src', src); jobs.push($('ph').decode().catch(() => {})); }
+    $('taps').innerHTML = (PHM[k] || {taps: []}).taps.map(([x, y]) => `<div class="tap" style="left:${x / 390 * 660}px;top:${y / 844 * 1428}px"></div>`).join('');
+  } else ph.style.display = 'none';
+  // certificate
+  animWords($('t6'), t, 16.8, 20.0, .1);
+  const dk = $('deck'); if (t > 16.4 && t < 20.25) {
+    dk.style.display = 'block'; const out = cl((20.15 - t) / .45);
+    for (let k = 0; k < 12; k++) {   // cards fly up one by one and fan out around a pivot below the frame
+      const el = $('cd' + k), st = 16.55 + k * .11, e = eo(cl((t - st) / .9));
+      const ang = (k - 5.5) * 4.4 * e + Math.sin(t * .8 + k) * .5, gather = ease(cl((t - 18.7) / .8));
+      const a2 = ang * (1 + .25 * gather);
+      el.style.opacity = (cl((t - st) / .25) * out).toFixed(3);
+      el.style.transform = `translateY(${(1100 * (1 - e) - 140 * gather).toFixed(1)}px) rotateZ(${a2.toFixed(2)}deg) rotateY(${(40 * (1 - e)).toFixed(2)}deg) scale(${(1 - .12 * gather).toFixed(3)})`;
+      el.style.filter = `brightness(${(1 - .25 * gather).toFixed(3)}) blur(${(2.5 * gather).toFixed(2)}px)`;
+    }
+    const h = $('hero'), he = eo(cl((t - 18.7) / 1.0));
+    h.style.opacity = (cl((t - 18.7) / .3) * out).toFixed(3);
+    h.style.transform = `translateY(${(500 * (1 - he) - 60).toFixed(1)}px) rotateX(${(35 * (1 - he)).toFixed(2)}deg) rotateZ(${(-6 * (1 - he) + .7 * Math.sin(t * 1.2)).toFixed(2)}deg) scale(${(.7 + .3 * he + .015 * (t - 18.7)).toFixed(4)})`;
+    const sk = cl((t - 19.3) / .8); $('sheen').style.transform = `translateX(${(-120 + 240 * ease(sk)).toFixed(1)}%)`; $('sheen').style.opacity = sk > 0 && sk < 1 ? 1 : 0;
+  } else dk.style.display = 'none';
+  fadeIn($('t6p'), t, 19.0, 20.0, 24);
+  // CTA
+  const lg = $('logo'); { const a = eo(cl((t - 20.4) / 1.1)); lg.style.opacity = a.toFixed(3); lg.style.transform = `translateY(${(30 * (1 - a)).toFixed(1)}px) scale(${(.94 + .06 * a).toFixed(3)})`; lg.style.filter = `blur(${(16 * (1 - a)).toFixed(2)}px) drop-shadow(0 6px 30px rgba(0,0,0,.45))`; }
+  animWords($('t7'), t, 21.0, 30, .14);
+  { const a = eo(cl((t - 22.0) / .8)); const b = $('t7b'); b.style.opacity = a.toFixed(3); b.style.transform = `scale(${(.8 + .2 * a + .025 * Math.sin(Math.max(0, t - 22.8) * 5)).toFixed(4)})`; }
+  fadeIn($('t7s'), t, 22.5, 30, 16);
+  dust(t); grain(fi);
+  $('dip').style.opacity = Math.max(1 - cl(t / .5), cl((t - (TOTAL - .6)) / .6)).toFixed(3);
+  await Promise.all(jobs);
+}
+window.seek = seek;
+window.ready = (async () => {
+  PHM = await (await fetch('fr/phone/meta.json')).json();
+  await Promise.all(['400', '500', '600', '700'].flatMap(w => [`${w} 40px "Cormorant Garamond"`, `italic ${w} 40px "Cormorant Garamond"`, `${w} 20px Montserrat`]).map(f => document.fonts.load(f, 'Таиланд abc ₸')));
+  await document.fonts.ready; await Promise.all([...document.images].map(i => i.decode().catch(() => {})));
+  return Math.round(TOTAL * FPS);
+})();
+</script></body></html>
