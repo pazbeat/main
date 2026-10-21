@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8"><title>Imbir reel 3</title>
+<link href="../fonts/fonts.css" rel="stylesheet"><link href="../fonts2/m.css" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#000}
+#st{position:relative;width:1080px;height:1920px;overflow:hidden;background:#0d0214;font-family:Montserrat,"Noto Color Emoji",sans-serif;color:#fff}
+.abs{position:absolute}
+.ctr{left:60px;right:60px;text-align:center}
+#lock{position:absolute;inset:0;transform-origin:50% 40%}
+#wall{position:absolute;inset:-60px;width:1200px;height:2040px;object-fit:cover;filter:blur(26px) brightness(.55) saturate(1.2)}
+#clock{position:absolute;left:0;right:0;top:170px;text-align:center;font-weight:300;font-size:230px;letter-spacing:-.02em;line-height:1}
+#date{position:absolute;left:0;right:0;top:130px;text-align:center;font-weight:500;font-size:40px;color:rgba(255,255,255,.85)}
+#stack{position:absolute;left:44px;right:44px;top:470px;height:1450px}
+.nt{position:absolute;left:0;right:0;height:150px;border-radius:40px;background:rgba(245,240,250,.80);backdrop-filter:blur(30px);color:#1b1022;display:flex;align-items:center;gap:26px;padding:0 30px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.nt .ic{flex:none;width:86px;height:86px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:50px}
+.nt .bd{flex:1;min-width:0}
+.nt .ap{display:flex;justify-content:space-between;font-size:27px;font-weight:600;color:#3b2b45}
+.nt .ap span{font-weight:400;color:#7a6d84}
+.nt .tx{font-size:33px;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#badge{position:absolute;right:70px;top:400px;background:#ff3b30;border-radius:999px;font-weight:700;font-size:40px;padding:8px 26px}
+#knows{font-family:MontX,Montserrat;font-weight:900;font-size:120px;text-transform:uppercase;text-shadow:0 10px 40px rgba(0,0,0,.6)}
+#focus{position:absolute;left:50%;top:620px;transform:translateX(-50%);display:flex;align-items:center;gap:24px;background:rgba(40,16,58,.88);border:2px solid rgba(236,201,120,.6);border-radius:999px;padding:24px 46px 24px 26px;white-space:nowrap;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+#focus .moon{width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,#8a5cf6,#5b2a86);display:flex;align-items:center;justify-content:center;font-size:48px}
+#focus .t1{font-size:30px;color:#ecc978;letter-spacing:.18em;text-transform:uppercase;font-weight:600}
+#focus .t2{font-size:44px;font-weight:600;margin-top:4px}
+.full{position:absolute;inset:0;overflow:hidden}
+#spa img,#ctabg{position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:50% 50%}
+.whis{font-family:"Cormorant Garamond",serif;font-weight:500;font-size:110px;text-shadow:0 6px 40px rgba(10,2,16,.7)}
+.whis i{font-style:italic;color:#f3d48c}
+.pill{display:inline-block;border-radius:999px;background:linear-gradient(135deg,#f0d38f,#b69244);color:#2b0b3d;font-weight:700;letter-spacing:.06em}
+#grain{position:absolute;inset:-60px;pointer-events:none;opacity:.06;mix-blend-mode:overlay}
+#dip{position:absolute;inset:0;background:#000;pointer-events:none}
+</style></head>
+<body><div id="st">
+  <div class="full" id="spa" style="display:none"><img id="s0"><img id="s1"></div>
+  <div class="full" id="spashade" style="display:none;background:linear-gradient(180deg,rgba(12,3,18,.55),rgba(12,3,18,.05) 40%,rgba(12,3,18,.05) 65%,rgba(12,3,18,.6))"></div>
+  <div id="lock"><img id="wall" src="fr/lounge/0060.jpg"><div id="date">Понедельник, 21 октября</div><div id="clock">9:41</div><div id="stack"></div><div id="badge">1</div></div>
+  <div class="abs" id="kband" style="left:0;right:0;top:1300px;height:620px;background:linear-gradient(180deg,rgba(13,2,20,0),rgba(13,2,20,.85) 45%,rgba(13,2,20,.95))"></div><div class="abs ctr" id="knows" style="top:1560px">Знакомо?</div>
+  <div id="focus"><div class="moon">🌙</div><div><div class="t1">Не беспокоить</div><div class="t2">Imbir Thai Spa · 90 мин</div></div></div>
+  <div class="abs ctr whis" id="w1" style="top:560px">Ни звонков.</div>
+  <div class="abs ctr whis" id="w2" style="top:560px">Ни чатов.</div>
+  <div class="abs ctr whis" id="w3" style="top:560px"><i>Только ты.</i></div>
+  <div class="abs ctr whis" id="w4" style="top:470px;font-size:120px;line-height:1.02">90 минут<br><i>тишины</i></div>
+  <div class="full" id="cta" style="display:none"><img id="ctabg" style="filter:blur(16px) brightness(.42);transform:scale(1.15)">
+    <div class="abs ctr whis" id="c1" style="top:330px;font-size:96px;line-height:1.05">Подари кому-то<br><i>режим «Не беспокоить»</i></div>
+    <img src="../a/logo-white.png" id="clogo" class="abs" style="left:240px;top:1010px;width:600px">
+    <div class="abs ctr" id="c2" style="top:1240px"><span class="pill" style="font-size:52px;padding:30px 80px">imbir.kz</span></div>
+    <div class="abs ctr" id="c3" style="top:1400px;font-size:34px;letter-spacing:.05em;line-height:1.5;color:rgba(255,255,255,.9)">Подарочный сертификат онлайн<br>за 2 минуты · от 20 000 ₸</div></div>
+  <canvas id="grain" width="600" height="1100"></canvas><div id="dip"></div>
+</div>
+<script>
+const FPS = 30, TOTAL = 22.5;
+const cl = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x)), ease = k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2, eo = k => 1 - Math.pow(1 - k, 3);
+const back = k => { const c = 1.7; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
+const pad = n => String(n).padStart(4, '0'); const $ = id => document.getElementById(id);
+const N = [
+  ['💼', '#2f6bff', 'Начальник', 'Можешь глянуть до вечера? Срочно'],
+  ['👩‍👧', '#ff7aa8', 'Мама', 'Ты поела? Перезвони'],
+  ['📅', '#ff453a', 'Календарь', 'Созвон перенесли на 8:00'],
+  ['🏫', '#34c759', 'Чат класса (128)', 'Завтра сдаём на шторы!!!'],
+  ['🏦', '#1c1c1e', 'Kaspi', 'Списание 24 990 ₸'],
+  ['⏰', '#ff9f0a', 'Дедлайн', 'Отчёт — сегодня до 18:00'],
+  ['🧦', '#5e5ce6', 'Муж', 'Где мои носки?'],
+  ['🎄', '#30b0c7', 'Сын', 'Мам, мне нужен костюм ёлки на завтра'],
+  ['💼', '#2f6bff', 'Начальник', 'Ещё одна правка 🙏'],
+  ['🏠', '#a2845e', 'Чат дома', 'Кто опять поставил машину у шлагбаума?'],
+  ['📧', '#0a84ff', 'Почта', '99+ непрочитанных'],
+  ['🏋️', '#ff375f', 'Фитнес', 'Вы пропустили 14 тренировок'],
+  ['📅', '#ff453a', 'Календарь', '3 встречи в одно время'],
+  ['👩‍👧', '#ff7aa8', 'Мама', 'Почему не отвечаешь?'],
+  ['🏫', '#34c759', 'Чат класса (129)', 'Кто ещё не сдал на подарок?'],
+  ['💼', '#2f6bff', 'Начальник', 'Ты где?'],
+  ['🛒', '#ff9500', 'Доставка', 'Курьер у двери'],
+  ['🧦', '#5e5ce6', 'Муж', 'Нашёл. Нет, не нашёл'],
+  ['⏰', '#ff9f0a', 'Дедлайн', 'Осталось 15 минут'],
+  ['📞', '#34c759', 'Пропущенный', 'Неизвестный номер (4)'],
+  ['🏦', '#1c1c1e', 'Kaspi', 'Списание 8 400 ₸'],
+  ['💼', '#2f6bff', 'Начальник', '???'],
+];
+// arrival times: slow start, accelerating into a flood
+const ARR = N.map((_, k) => .35 + 5.9 * (1 - Math.pow(1 - k / (N.length - 1), 1.7)));
+const SWIPE = 6.55, FOCUS = 6.95, SPA0 = 7.6, CTA = 18.4;
+// spa sequence: clip, start, end
+const SPA = [['petals', 7.6, 10.2, 176, 1], ['massage', 10.2, 12.5, 146, 1], ['candle', 12.5, 14.7, 140, 1], ['hammam', 14.7, 16.7, 155, 1], ['tea', 16.7, 18.7, 122, 1]];
+$('stack').innerHTML = N.map(([ic, col, ap, tx], k) => `<div class="nt" id="n${k}"><div class="ic" style="background:${col}">${ic}</div><div class="bd"><div class="ap">${ap}<span>сейчас</span></div><div class="tx">${tx}</div></div></div>`).join('');
+function setImg(el, src, jobs) { if (el.getAttribute('src') !== src) { el.setAttribute('src', src); jobs.push(el.decode().catch(() => {})); } }
+function show(id, on) { $(id).style.display = on ? '' : 'none'; }
+function whisper(el, t, a, b) { const i = eo(cl((t - a) / .7)), o = cl((b - t) / .5); el.style.opacity = (i * o).toFixed(3); el.style.filter = `blur(${(16 * (1 - i) + 10 * (1 - o)).toFixed(2)}px)`; el.style.transform = `translateY(${(20 * (1 - i)).toFixed(1)}px) scale(${(1 + .03 * (t - a)).toFixed(4)})`; }
+function grain(fi) { const c = $('grain').getContext('2d'), d = c.createImageData(600, 1100); let s = fi * 7919 + 1; for (let i = 0; i < d.data.length; i += 4) { s = (s * 1103515245 + 12345) & 0x7fffffff; const v = s >> 23; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } c.putImageData(d, 0, 0); $('grain').style.transform = `scale(2) translate(${(fi * 13) % 30}px,${(fi * 7) % 30}px)`; }
+async function seek(fi) {
+  const t = fi / FPS, jobs = [];
+  // ---------- lock screen chaos ----------
+  const inLock = t < SPA0 + .6; show('lock', inLock);
+  if (inLock) {
+    const arrived = ARR.filter(a => a <= t).length, stress = cl(t / SWIPE);
+    const sw = ease(cl((t - SWIPE) / .45));
+    N.forEach((_, k) => {
+      const el = $('n' + k), a = ARR[k];
+      if (t < a) { el.style.display = 'none'; return; } el.style.display = 'flex';
+      const pos = arrived - 1 - k;                 // 0 = newest, on top
+      const e = back(cl((t - a) / .28));
+      const y = pos * 166 * (1 - .35 * cl((arrived - 6) / 16)) ;     // pack tighter as the flood grows
+      const jit = Math.sin(t * 40 + k) * 4 * stress * stress;
+      el.style.transform = `translate(${(jit + 1300 * sw * (1 + k * .04)).toFixed(1)}px,${(y - 60 * (1 - e)).toFixed(1)}px) scale(${(.85 + .15 * Math.min(1, e)).toFixed(3)}) rotate(${(sw * 14).toFixed(2)}deg)`;
+      el.style.opacity = (cl((t - a) / .12) * (pos > 6 ? Math.max(0, 1 - (pos - 6) * .3) : 1)).toFixed(3);
+      el.style.zIndex = 100 - pos;
+    });
+    $('badge').textContent = arrived > 19 ? '99+' : String(Math.max(1, Math.round(arrived * arrived * .9)));
+    $('badge').style.opacity = (cl(t / .4) * (1 - sw)).toFixed(3);
+    const shake = stress > .5 ? Math.pow((stress - .5) * 2, 2) * (1 - sw) : 0;
+    $('lock').style.transform = `translate(${(Math.sin(t * 57) * 9 * shake).toFixed(1)}px,${(Math.cos(t * 43) * 7 * shake).toFixed(1)}px) scale(${(1 + .02 * shake).toFixed(4)})`;
+    $('clock').textContent = t < 3 ? '9:41' : t < 5 ? '9:42' : '9:43';
+    $('lock').style.opacity = cl((SPA0 + .6 - t) / .6).toFixed(3);
+    $('wall').style.filter = `blur(26px) brightness(${(.55 - .15 * stress + .1 * sw).toFixed(3)}) saturate(1.2)`;
+  }
+  $('kband').style.opacity = (cl((t - 1.2) / .3) * cl((SWIPE - t) / .3)).toFixed(3);
+  { const k = $('knows'); const a = back(cl((t - 1.4) / .35)); k.style.opacity = (cl((t - 1.4) / .1) * cl((SWIPE - t) / .2)).toFixed(3); k.style.transform = `scale(${(.6 + .4 * a).toFixed(4)}) rotate(-3deg)`; }
+  // ---------- Do Not Disturb pill ----------
+  { const f = $('focus'); const a = back(cl((t - FOCUS) / .45)), o = cl((SPA0 + 1.4 - t) / .5); f.style.opacity = (cl((t - FOCUS) / .15) * o).toFixed(3); f.style.transform = `translateX(-50%) scale(${(.5 + .5 * a).toFixed(4)})`; f.style.display = t > FOCUS - .1 && t < SPA0 + 1.5 ? 'flex' : 'none'; }
+  // ---------- spa ----------
+  const inSpa = t >= SPA0 - .4 && t < CTA + .6; show('spa', inSpa); show('spashade', inSpa);
+  if (inSpa) {
+    const i = Math.max(0, SPA.findIndex(s => t >= s[1] && t < s[2])); const cur = SPA[i < 0 ? 0 : i];
+    const lt = Math.max(0, t - cur[1]); setImg($('s0'), `fr/${cur[0]}/${pad(Math.min(cur[3], 1 + Math.round(lt * FPS)))}.jpg`, jobs);
+    $('s0').style.transform = `scale(${(1.12 - .05 * cl(lt / 2.6)).toFixed(4)})`;
+    const nx = SPA[i + 1], xf = nx ? cl((t - (nx[1] - .6)) / .6) : 0;
+    if (xf > 0) { setImg($('s1'), `fr/${nx[0]}/0001.jpg`, jobs); $('s1').style.opacity = ease(xf).toFixed(3); $('s1').style.display = ''; $('s1').style.transform = 'scale(1.12)'; } else $('s1').style.display = 'none';
+    $('spa').style.opacity = cl((t - (SPA0 - .4)) / .9).toFixed(3); $('spashade').style.opacity = $('spa').style.opacity;
+  }
+  whisper($('w1'), t, 8.6, 10.0); whisper($('w2'), t, 10.4, 11.9); whisper($('w3'), t, 12.4, 14.3); whisper($('w4'), t, 14.9, 18.2);
+  // ---------- CTA ----------
+  const inC = t >= CTA; show('cta', inC);
+  if (inC) {
+    const lt = t - CTA; $('cta').style.opacity = eo(cl(lt / .6)).toFixed(3);
+    setImg($('ctabg'), `fr/candle/${pad(Math.min(140, 40 + Math.round(lt * FPS)))}.jpg`, jobs);
+    whisper($('c1'), lt, .3, 99);
+    const lg = $('clogo'), a = eo(cl((lt - .9) / .6)); lg.style.opacity = a; lg.style.transform = `translateY(${20 * (1 - a)}px)`;
+    const b = back(cl((lt - 1.4) / .45)); $('c2').style.opacity = cl((lt - 1.4) / .2); $('c2').style.transform = `scale(${(.6 + .4 * b + .03 * Math.sin(Math.max(0, lt - 1.9) * 6)).toFixed(4)})`;
+    const c = eo(cl((lt - 1.8) / .5)); $('c3').style.opacity = c; $('c3').style.transform = `translateY(${16 * (1 - c)}px)`;
+  }
+  grain(fi);
+  $('dip').style.opacity = Math.max(1 - cl(t / .25), cl((t - (TOTAL - .6)) / .6)).toFixed(3);
+  await Promise.all(jobs);
+}
+window.seek = seek; window.ARR = ARR;
+window.ready = (async () => {
+  await Promise.all(['300', '400', '500', '600'].flatMap(w => [`${w} 40px "Cormorant Garamond"`, `italic ${w} 40px "Cormorant Garamond"`, `${w} 20px Montserrat`]).concat(['900 40px MontX', '40px "Noto Color Emoji"']).map(f => document.fonts.load(f, 'Знакомо abc ₸ 🌙')));
+  await document.fonts.ready; await Promise.all([...document.images].map(i => i.decode().catch(() => {})));
+  return Math.round(TOTAL * FPS);
+})();
+</script></body></html>
