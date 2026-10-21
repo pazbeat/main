@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8"><title>Imbir reel 2</title>
+<link href="../fonts/fonts.css" rel="stylesheet"><link href="../fonts2/m.css" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#000}
+#st{position:relative;width:1080px;height:1920px;overflow:hidden;background:radial-gradient(1100px 1400px at 50% 40%,#4a1763 0%,#22072f 55%,#0d0214 100%);font-family:Montserrat,sans-serif;color:#fff}
+.abs{position:absolute}
+.full{position:absolute;inset:0}
+#vid img{width:100%;height:100%;object-fit:cover;display:block}
+.card{position:absolute;border-radius:28px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.55),0 0 0 3px rgba(236,201,120,.5)}
+.card img{width:100%;height:100%;display:block;object-fit:cover}
+.big{font-family:MontX,Montserrat,sans-serif;font-weight:900;text-transform:uppercase;letter-spacing:-.01em;line-height:.92}
+.serif{font-family:"Cormorant Garamond",serif;font-weight:500}
+.serif i{font-style:italic;color:#f3d48c}
+.ctr{left:60px;right:60px;text-align:center}
+.pill{display:inline-block;border-radius:999px;background:linear-gradient(135deg,#f0d38f,#b69244);color:#2b0b3d;font-weight:700;letter-spacing:.06em}
+.tag{display:inline-block;background:#fff;color:#2b0b3d;border-radius:18px;padding:14px 30px;font-weight:600}
+#grain{position:absolute;inset:-60px;pointer-events:none;opacity:.06;mix-blend-mode:overlay}
+#flash{position:absolute;inset:0;background:#fff;pointer-events:none;opacity:0}
+#dip{position:absolute;inset:0;background:#0c0312;pointer-events:none}
+.w{display:inline-block}
+</style></head>
+<body><div id="st">
+  <div class="full" id="vid" style="display:none"><img id="vimg"></div>
+  <div class="full" id="vshade" style="display:none;background:linear-gradient(180deg,rgba(20,4,28,.75) 0%,rgba(20,4,28,.1) 35%,rgba(20,4,28,.1) 70%,rgba(20,4,28,.7) 100%)"></div>
+  <div id="wall" class="full" style="display:none;perspective:1600px"><div id="wallin" class="abs" style="left:-500px;top:-700px;width:2080px;transform-style:preserve-3d"></div></div>
+  <div class="card" id="spin" style="left:90px;top:690px;width:900px;height:586px"><img id="spinimg"></div>
+  <div class="abs ctr" id="hook" style="top:250px"><div class="big" style="font-size:132px">Останови<br>видео</div><div class="serif" style="font-size:66px;margin-top:26px">это <i>твоя</i> открытка</div></div>
+  <div class="abs ctr" id="hint" style="top:1420px;font-weight:600;font-size:34px;letter-spacing:.3em;text-transform:uppercase;color:#ecc978">пауза — и смотри</div>
+  <div class="abs ctr" id="land" style="top:260px"><div class="serif" style="font-size:84px">Выпало<br><i>«Отменяй все планы»?</i></div><div style="margin-top:30px;font-size:40px;font-weight:600;letter-spacing:.04em">Значит, тебе пора в спа</div></div>
+  <div class="card" id="pcard" style="left:140px;top:700px;width:800px;height:521px"><img id="pimg"></div>
+  <div class="abs ctr" id="pcap" style="top:300px"><div style="font-size:34px;font-weight:600;letter-spacing:.3em;text-transform:uppercase;color:#ecc978" id="pcap1">подари</div><div class="serif" style="font-size:96px;line-height:1.02;margin-top:14px" id="pcap2"></div></div>
+  <div class="abs ctr" id="wallt" style="top:640px"><div class="big" style="font-size:118px;text-shadow:0 10px 50px rgba(20,4,30,.8)">Что выпало<br>тебе?</div><div style="margin-top:40px"><span class="tag" style="font-size:42px">Пиши в комментариях ↓</span></div></div>
+  <div class="full" id="cta" style="display:none"><img id="ctabg" style="width:100%;height:100%;object-fit:cover;filter:blur(18px) brightness(.45);transform:scale(1.15)">
+    <img src="../a/logo-white.png" id="clogo" class="abs" style="left:210px;top:470px;width:660px">
+    <div class="abs ctr serif" id="ct1" style="top:740px;font-size:104px;line-height:1.02">Подари отдых,<br><i>а не вещь</i></div>
+    <div class="abs ctr" id="ct2" style="top:1060px"><span class="pill" style="font-size:52px;padding:30px 80px">imbir.kz</span></div>
+    <div class="abs ctr" id="ct3" style="top:1220px;font-size:34px;letter-spacing:.05em;line-height:1.5;color:rgba(255,255,255,.9)">Сертификат онлайн за 2 минуты<br>от 20 000 ₸ · 9 салонов</div></div>
+  <canvas id="grain" width="600" height="1100"></canvas><div id="flash"></div><div id="dip"></div>
+</div>
+<script>
+const FPS = 30, TOTAL = 23.5;
+const cl = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x)), ease = k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2, eo = k => 1 - Math.pow(1 - k, 3);
+const back = k => { const c = 1.9; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
+const pad = n => String(n).padStart(4, '0'); const $ = id => document.getElementById(id);
+let CARDS = [];
+const LAND = 5;
+const PERS = [   // card index, caption, spa clip
+  {c: 34, cap: 'подруге,<br><i>которая 10/10</i>', clip: 'massage', n: 146},
+  {c: 18, cap: 'маме,<br><i>которая всё на себе</i>', clip: 'petals', n: 176},
+  {c: 16, cap: 'коллеге<br><i>после дедлайна</i>', clip: 'lounge', n: 172},
+  {c: 35, cap: 'ему,<br><i>который не умеет отдыхать</i>', clip: 'hammam', n: 155},
+];
+// ---- spin schedule: frame -> card ----
+const SPIN = [];
+(function () {
+  let f = 0, k = 0; const order = []; for (let i = 0; i < 37; i++) if (i !== LAND) order.push(i);
+  // shuffled but deterministic
+  let s = 3; for (let i = order.length - 1; i > 0; i--) { s = (s * 16807) % 2147483647; const j = s % (i + 1); [order[i], order[j]] = [order[j], order[i]]; }
+  const durs = []; while (durs.reduce((a, b) => a + b, 0) < 150) durs.push(4);   // 5 s at 4 frames per card
+  durs.push(5, 6, 7, 9, 12, 16);
+  for (const d of durs) { SPIN.push({f0: f, f1: f + d, card: order[k % order.length]}); f += d; k++; }
+  SPIN.push({f0: f, f1: 99999, card: LAND});
+})();
+const LANDF = SPIN[SPIN.length - 1].f0;    // landing frame
+const TL = LANDF / FPS + 1.6;           // personas start
+const PD = 2.2;                          // per persona
+const TW = TL + PERS.length * PD;        // wall start
+const TC = TW + 2.8;                     // CTA start
+function cardSrc(i) { return '' + 'cards/' + CARDS[i]; }
+function setImg(el, src, jobs) { if (el.getAttribute('src') !== src) { el.setAttribute('src', src); jobs.push(el.decode().catch(() => {})); } }
+function show(id, on) { $(id).style.display = on ? '' : 'none'; }
+function txtIn(el, t, tin, tout, dy = 40) { const a = eo(cl((t - tin) / .45)), o = cl((tout - t) / .25); el.style.opacity = (a * o).toFixed(3); el.style.transform = `translateY(${(dy * (1 - a)).toFixed(1)}px)`; }
+function grain(fi) { const c = $('grain').getContext('2d'), d = c.createImageData(600, 1100); let s = fi * 7919 + 1; for (let i = 0; i < d.data.length; i += 4) { s = (s * 1103515245 + 12345) & 0x7fffffff; const v = s >> 23; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } c.putImageData(d, 0, 0); $('grain').style.transform = `scale(2) translate(${(fi * 13) % 30}px,${(fi * 7) % 30}px)`; }
+let wallBuilt = false;
+async function seek(fi) {
+  const t = fi / FPS, jobs = []; let flash = 0;
+  // ---------- spin + landing ----------
+  const sp = t < TL + .35;
+  show('spin', sp); show('hook', t < LANDF / FPS); show('hint', t > 1.0 && t < LANDF / FPS);
+  if (sp) {
+    const seg = SPIN.find(s => fi >= s.f0 && fi < s.f1); setImg($('spinimg'), cardSrc(seg.card), jobs);
+    const local = fi - seg.f0, kick = Math.exp(-local / 1.6);
+    const landed = fi >= LANDF, lk = landed ? (fi - LANDF) / FPS : 0;
+    let sc = 1 + .05 * kick, rot = ((seg.card * 37) % 7 - 3) * .8 * kick, ty = 0;
+    if (landed) { const b = back(cl(lk / .45)); sc = .82 + .3 * b; rot = 0; ty = 120 * eo(cl(lk / .6)); flash = Math.max(0, .8 - lk * 2.2); }
+    const out = cl((TL + .35 - t) / .35);
+    $('spin').style.transform = `translateY(${ty.toFixed(1)}px) rotate(${rot.toFixed(2)}deg) scale(${sc.toFixed(4)})`; $('spin').style.opacity = out.toFixed(3);
+    $('spin').style.filter = landed ? '' : `brightness(${(1 + .25 * kick).toFixed(3)})`;
+    const hk = $('hook'); const hp = 1 + .025 * Math.sin(t * Math.PI * 4); hk.style.transform = `scale(${(t < .35 ? .6 + .4 * back(cl(t / .35)) : hp).toFixed(4)})`; hk.style.opacity = cl(t / .15).toFixed(3);
+    $('hint').style.opacity = (.55 + .45 * Math.sin(t * 6)).toFixed(3);
+  }
+  show('land', t >= LANDF / FPS && t < TL + .3); if (t >= LANDF / FPS) txtIn($('land'), t, LANDF / FPS + .15, TL + .25);
+  // ---------- personas: card -> expands into spa video ----------
+  const pi = Math.floor((t - TL) / PD); const inP = t >= TL && pi < PERS.length;
+  show('pcard', inP); show('pcap', inP); show('vid', inP); show('vshade', inP);
+  if (inP) {
+    const P = PERS[pi], lt = t - TL - pi * PD;
+    setImg($('pimg'), cardSrc(P.c), jobs);
+    $('pcap2').innerHTML = P.cap; txtIn($('pcap'), lt, .05, PD - .05, 30);
+    const fin = eo(cl(lt / .4)), ex = ease(cl((lt - .75) / .55));
+    // card flies in from the side, then its frame grows to fill the screen while the video shows through
+    const x0 = 140, y0 = 700, w0 = 800, h0 = 521;
+    const L = x0 * (1 - ex), T = y0 * (1 - ex), W = w0 + (1080 - w0) * ex, H = h0 + (1920 - h0) * ex;
+    const card = $('pcard'); card.style.left = L + 'px'; card.style.top = T + 'px'; card.style.width = W + 'px'; card.style.height = H + 'px';
+    card.style.borderRadius = (28 * (1 - ex)) + 'px';
+    card.style.transform = `translateX(${((pi % 2 ? -1 : 1) * 700 * (1 - fin)).toFixed(1)}px) rotate(${((pi % 2 ? 6 : -6) * (1 - fin)).toFixed(2)}deg)`;
+    $('pimg').style.opacity = (1 - ex).toFixed(3);
+    const vk = Math.min(P.n, 1 + Math.round(lt * FPS)); setImg($('vimg'), `fr/${P.clip}/${pad(vk)}.jpg`, jobs);
+    $('vid').style.clipPath = `inset(${T.toFixed(1)}px ${(1080 - L - W).toFixed(1)}px ${(1920 - T - H).toFixed(1)}px ${L.toFixed(1)}px round ${(28 * (1 - ex)).toFixed(1)}px)`;
+    $('vid').style.transform = `translateX(${((pi % 2 ? -1 : 1) * 700 * (1 - fin)).toFixed(1)}px)`;
+    $('vimg').style.transform = `scale(${(1.25 - .17 * ex + .03 * lt).toFixed(4)})`;
+    $('vshade').style.opacity = ex.toFixed(3);
+    if (lt < .12 && pi > 0) flash = Math.max(flash, .35 * (1 - lt / .12));
+  }
+  // ---------- wall of cards ----------
+  const inW = t >= TW && t < TC + .4; show('wall', inW); show('wallt', inW);
+  if (inW) {
+    if (!wallBuilt) { let h = ''; for (let r = 0; r < 9; r++) for (let c = 0; c < 4; c++) { const i = (r * 4 + c + r * 3) % 37; h += `<div class="card" style="left:${c * 520 + (r % 2) * 260}px;top:${r * 360}px;width:500px;height:326px;border-radius:20px"><img src="${cardSrc(i)}"></div>`; } $('wallin').innerHTML = h; wallBuilt = true; jobs.push(...[...$('wallin').querySelectorAll('img')].map(i => i.decode().catch(() => {}))); }
+    const lt = t - TW; $('wallin').style.transform = `rotateX(28deg) rotateZ(-14deg) translateY(${(-160 * lt).toFixed(1)}px) scale(${(1.25 - .05 * lt).toFixed(3)})`;
+    $('wall').style.opacity = (eo(cl(lt / .4)) * cl((TC + .4 - t) / .4)).toFixed(3); $('wall').style.filter = `brightness(${(.55).toFixed(2)})`;
+    const wt = $('wallt'); const a = back(cl((lt - .15) / .45)); wt.style.opacity = cl((lt - .15) / .2) * cl((TC + .3 - t) / .3); wt.style.transform = `scale(${(.7 + .3 * a).toFixed(4)})`;
+    if (lt < .1) flash = Math.max(flash, .4 * (1 - lt / .1));
+  }
+  // ---------- CTA ----------
+  const inC = t >= TC; show('cta', inC);
+  if (inC) {
+    const lt = t - TC; $('cta').style.opacity = eo(cl(lt / .4)).toFixed(3);
+    setImg($('ctabg'), `fr/petals/${pad(Math.min(176, 1 + Math.round(lt * FPS)))}.jpg`, jobs);
+    const lg = $('clogo'), a = eo(cl((lt - .1) / .6)); lg.style.opacity = a; lg.style.transform = `translateY(${30 * (1 - a)}px)`;
+    txtIn($('ct1'), lt, .45, 99); const b = back(cl((lt - .95) / .45)); $('ct2').style.opacity = cl((lt - .95) / .2); $('ct2').style.transform = `scale(${(.6 + .4 * b + .03 * Math.sin(Math.max(0, lt - 1.4) * 6)).toFixed(4)})`;
+    txtIn($('ct3'), lt, 1.3, 99, 20);
+  }
+  $('flash').style.opacity = flash.toFixed(3); grain(fi);
+  $('dip').style.opacity = cl((t - (TOTAL - .5)) / .5).toFixed(3);
+  await Promise.all(jobs);
+}
+window.seek = seek; window.MARKS = () => ({LANDF, TL, TW, TC, TOTAL});
+window.ready = (async () => {
+  CARDS = await (await fetch('cards/order.json')).json();
+  await Promise.all(['400', '500', '600'].flatMap(w => [`${w} 40px "Cormorant Garamond"`, `italic ${w} 40px "Cormorant Garamond"`, `${w} 20px Montserrat`]).concat(['900 40px MontX', '800 40px MontX']).map(f => document.fonts.load(f, 'Останови abc ₸')));
+  await document.fonts.ready;
+  await Promise.all(CARDS.map(c => { const i = new Image(); i.src = cardSrc(CARDS.indexOf(c)); return i.decode().catch(() => {}); }));
+  return Math.round(TOTAL * FPS);
+})();
+</script></body></html>
